@@ -1,88 +1,151 @@
+import {Map} from '../Map.js';
+import {Handler} from '../../core/Handler.js';
+import * as DomUtil from '../../dom/DomUtil.js';
+import * as DomEvent from '../../dom/DomEvent.js';
+import {LatLngBounds} from '../../geo/LatLngBounds.js';
+import {Bounds} from '../../geometry/Bounds.js';
+
 /*
- * L.Handler.ShiftDragZoom is used internally by L.Map to add shift-drag zoom (zoom to a selected bounding box).
+ * L.Handler.BoxZoom is used to add shift-drag zoom interaction to the map
+ * (zoom to a selected bounding box), enabled by default.
  */
 
-L.Map.mergeOptions({
+// @namespace Map
+// @section Interaction Options
+Map.mergeOptions({
+	// @option boxZoom: Boolean = true
+	// Whether the map can be zoomed to a rectangular area specified by
+	// dragging the pointer while pressing the shift key.
 	boxZoom: true
 });
 
-L.Map.BoxZoom = L.Handler.extend({
-	initialize: function (map) {
+export const BoxZoom = Handler.extend({
+	initialize(map) {
 		this._map = map;
 		this._container = map._container;
 		this._pane = map._panes.overlayPane;
+		this._resetStateTimeout = 0;
+		map.on('unload', this._destroy, this);
 	},
 
-	addHooks: function () {
-		L.DomEvent.addListener(this._container, 'mousedown', this._onMouseDown, this);
+	addHooks() {
+		DomEvent.on(this._container, 'pointerdown', this._onPointerDown, this);
 	},
 
-	removeHooks: function () {
-		L.DomEvent.removeListener(this._container, 'mousedown', this._onMouseDown);
+	removeHooks() {
+		DomEvent.off(this._container, 'pointerdown', this._onPointerDown, this);
 	},
 
-	_onMouseDown: function (e) {
-		if (!e.shiftKey || ((e.which !== 1) && (e.button !== 1))) { return false; }
-
-		L.DomUtil.disableTextSelection();
-
-		this._startLayerPoint = this._map.mouseEventToLayerPoint(e);
-
-		this._box = L.DomUtil.create('div', 'leaflet-zoom-box', this._pane);
-		L.DomUtil.setPosition(this._box, this._startLayerPoint);
-
-		//TODO refactor: move cursor to styles
-		this._container.style.cursor = 'crosshair';
-
-		L.DomEvent
-			.addListener(document, 'mousemove', this._onMouseMove, this)
-			.addListener(document, 'mouseup', this._onMouseUp, this)
-			.preventDefault(e);
-			
-		this._map.fire("boxzoomstart");
+	moved() {
+		return this._moved;
 	},
 
-	_onMouseMove: function (e) {
-		var startPoint = this._startLayerPoint,
-			box = this._box,
-
-			layerPoint = this._map.mouseEventToLayerPoint(e),
-			offset = layerPoint.subtract(startPoint),
-
-			newPos = new L.Point(
-				Math.min(layerPoint.x, startPoint.x),
-				Math.min(layerPoint.y, startPoint.y));
-
-		L.DomUtil.setPosition(box, newPos);
-
-		// TODO refactor: remove hardcoded 4 pixels
-		box.style.width  = (Math.abs(offset.x) - 4) + 'px';
-		box.style.height = (Math.abs(offset.y) - 4) + 'px';
+	_destroy() {
+		this._pane.remove();
+		delete this._pane;
 	},
 
-	_onMouseUp: function (e) {
-		this._pane.removeChild(this._box);
-		this._container.style.cursor = '';
+	_resetState() {
+		this._resetStateTimeout = 0;
+		this._moved = false;
+	},
 
-		L.DomUtil.enableTextSelection();
+	_clearDeferredResetState() {
+		if (this._resetStateTimeout !== 0) {
+			clearTimeout(this._resetStateTimeout);
+			this._resetStateTimeout = 0;
+		}
+	},
 
-		L.DomEvent
-			.removeListener(document, 'mousemove', this._onMouseMove)
-			.removeListener(document, 'mouseup', this._onMouseUp);
+	_onPointerDown(e) {
+		if (!e.shiftKey || (e.button !== 0)) { return false; }
 
-		var map = this._map,
-			layerPoint = map.mouseEventToLayerPoint(e);
+		// Clear the deferred resetState if it hasn't executed yet, otherwise it
+		// will interrupt the interaction and orphan a box element in the container.
+		this._clearDeferredResetState();
+		this._resetState();
 
-		var bounds = new L.LatLngBounds(
-				map.layerPointToLatLng(this._startLayerPoint),
-				map.layerPointToLatLng(layerPoint));
+		DomUtil.disableTextSelection();
+		DomUtil.disableImageDrag();
 
-		map.fitBounds(bounds);
-		
-		map.fire("boxzoomend", {
-			boxZoomBounds: bounds
-		});
+		this._startPoint = this._map.mouseEventToContainerPoint(e);
+
+		DomEvent.on(document, {
+			contextmenu: DomEvent.stop,
+			pointermove: this._onPointerMove,
+			pointerup: this._onPointerUp,
+			keydown: this._onKeyDown
+		}, this);
+	},
+
+	_onPointerMove(e) {
+		if (!this._moved) {
+			this._moved = true;
+
+			this._box = DomUtil.create('div', 'leaflet-zoom-box', this._container);
+			this._container.classList.add('leaflet-crosshair');
+
+			this._map.fire('boxzoomstart');
+		}
+
+		this._point = this._map.mouseEventToContainerPoint(e);
+
+		const bounds = new Bounds(this._point, this._startPoint),
+		    size = bounds.getSize();
+
+		DomUtil.setPosition(this._box, bounds.min);
+
+		this._box.style.width  = `${size.x}px`;
+		this._box.style.height = `${size.y}px`;
+	},
+
+	_finish() {
+		if (this._moved) {
+			this._box.remove();
+			this._container.classList.remove('leaflet-crosshair');
+		}
+
+		DomUtil.enableTextSelection();
+		DomUtil.enableImageDrag();
+
+		DomEvent.off(document, {
+			contextmenu: DomEvent.stop,
+			pointermove: this._onPointerMove,
+			pointerup: this._onPointerUp,
+			keydown: this._onKeyDown
+		}, this);
+	},
+
+	_onPointerUp(e) {
+		if (e.button !== 0) { return; }
+
+		this._finish();
+
+		if (!this._moved) { return; }
+		// Postpone to next JS tick so internal click event handling
+		// still see it as "moved".
+		this._clearDeferredResetState();
+		this._resetStateTimeout = setTimeout(this._resetState.bind(this), 0);
+
+		const bounds = new LatLngBounds(
+		        this._map.containerPointToLatLng(this._startPoint),
+		        this._map.containerPointToLatLng(this._point));
+
+		this._map
+			.fitBounds(bounds)
+			.fire('boxzoomend', {boxZoomBounds: bounds});
+	},
+
+	_onKeyDown(e) {
+		if (e.code === 'Escape') {
+			this._finish();
+			this._clearDeferredResetState();
+			this._resetState();
+		}
 	}
 });
 
-L.Map.addInitHook('addHandler', 'boxZoom', L.Map.BoxZoom);
+// @section Handlers
+// @property boxZoom: Handler
+// Box (shift-drag with pointer) zoom handler.
+Map.addInitHook('addHandler', 'boxZoom', BoxZoom);

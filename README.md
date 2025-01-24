@@ -1,32 +1,55 @@
-<img src="http://leaflet.cloudmade.com/docs/images/logo.png" alt="Leaflet" />
+Leaflet was created 11 years ago by [Volodymyr Agafonkin](https://agafonkin.com), a Ukrainian citizen living in Kyiv.
 
-Leaflet is a modern, lightweight open-source JavaScript library for mobile-friendly interactive maps, developed by [CloudMade](http://cloudmade.com) to form the core of its next generation JavaScript API. Weighting just about 21kb of gzipped JS code, it still has all the [features](http://leaflet.cloudmade.com/features.html) you will ever need for your web mapping needs while providing a fast, smooth, pleasant user experience.
+Russian bombs are now falling over Volodymyr's hometown. His family, his friends, his neighbours, thousands and thousands of absolutely wonderful people, are either seeking refuge or fighting for their lives.
 
-It is built from the ground up to work efficiently and smoothly on both desktop and mobile platforms like iOS and Android, utilizing cutting-edge technologies included in HTML5 and CSS3, focusing on usability, performance, small size, [A-grade](http://developer.yahoo.com/yui/articles/gbs/) browser support, flexibility and [easy to use API](http://leaflet.cloudmade.com/reference.html). The OOP-based code of the library is designed to be modular, extensible and very easy to understand.
+Russian soldiers have already killed tens of thousands of civilians, including women and children, and are committing mass war crimes like gang rapes, executions, looting, and targeted bombings of civilian shelters and places of cultural significance. The death toll keeps rising, and Ukraine needs your help.
 
-Check out the website for more information: [leaflet.cloudmade.com](http://leaflet.cloudmade.com)
+As Volodymyr [expressed a few days before the invasion](https://twitter.com/LeafletJS/status/1496051256409919489):
 
-## Contributing to Leaflet
-Let's make the best open-source library for maps that can possibly exist!
+> If you want to help, educate yourself and others on the Russian threat, follow reputable journalists, demand severe Russian sanctions and Ukrainian support from your leaders, protest the war, reach out to Ukrainian friends, donate to Ukrainian charities. Just don't be silent.
 
-Contributing is simple: make the changes in your fork, make sure that Leaflet builds successfully (see below) and then create a pull request to [Vladimir Agafonkin](http://github.com/mourner) (Leaflet maintainer). Updates to Leaflet [documentation](http://leaflet.cloudmade.com/reference.html) and [examples](http://leaflet.cloudmade.com/examples.html) (located in the `gh-pages` branch) are really appreciated too.
+Ukrainians are recommending the [Come Back Alive](https://savelife.in.ua/en/) charity. For other options, see [StandWithUkraine](https://stand-with-ukraine.pp.ua).
 
-Here's [a list of the awesome people](http://github.com/CloudMade/Leaflet/contributors) that joined us already. Looking forward to _your_ contributions!
+If an appeal to humanity doesn't work for you, I'll appeal to your egoism: the future of Ukrainian citizens is the future of Leaflet.
 
-## Building Leaflet
-Leaflet build system is powered by the Node.js platform and Jake, JSHint and UglifyJS libraries, which install easily and work well across all major platforms. Here are the steps to install it:
+It is chilling to see Leaflet being used for [documenting Russia's war crimes](https://ukraine.bellingcat.com/), [factual reporting of the war](https://liveuamap.com/) and for coordination of humanitarian efforts across Europe. We commend these uses of Leaflet.
 
- 1. [Download and install Node](http://nodejs.org)
- 2. Run the following commands in the command line:
+If you support the actions of the Russian government (even after reading all this), do everyone else a favour and [carry some seeds in your pocket](https://www.theguardian.com/world/video/2022/feb/25/ukrainian-woman-sunflower-seeds-russian-soldiers-video).
 
- ```
- npm install -g jake
- npm install jshint
- npm install uglify-js
- ```
+Yours truly,<br>
+Leaflet maintainers.
 
-Now that you have everything installed, run `jake` inside the Leaflet directory. This will check Leaflet source files for JavaScript errors and inconsistencies, and then combine and compress it to the `dist` folder.
+---
 
-To make a custom build of the library with only the things you need, use the build helper (`build/build.html`) to choose the components (it figures out dependencies for you) and then run the command generated with it.
+<img width="600" src="https://rawgit.com/Leaflet/Leaflet/main/src/images/logo.svg" alt="Leaflet" />
 
-If you add any new files to the Leaflet source, make sure to also add them to `build/deps.js` so that the build system knows about them. Happy coding!
+Leaflet is the leading open-source JavaScript library for **mobile-friendly interactive maps**.
+Weighing just about 42 KB of gzipped JS plus 4 KB of gzipped CSS code, it has all the mapping [features][] most developers ever need.
+
+Leaflet is designed with *simplicity*, *performance* and *usability* in mind.
+It works efficiently across all major desktop and mobile platforms out of the box,
+taking advantage of modern browser features while being accessible on older ones too.
+It can be extended with a huge amount of [plugins][],
+has a beautiful, easy to use and [well-documented][] API
+and a simple, readable [source code][] that is a joy to [contribute][] to.
+
+For more info, docs and tutorials, check out the [official website][].<br>
+For **Leaflet downloads** (including the built main version), check out the [download page][].
+
+We're happy to meet new contributors.
+If you want to **get involved** with Leaflet development, check out the [contribution guide][contribute].
+Let's make the best mapping library that will ever exist,
+and push the limits of what's possible with online maps!
+
+[![CI](https://github.com/Leaflet/Leaflet/actions/workflows/main.yml/badge.svg)](https://github.com/Leaflet/Leaflet/actions/workflows/main.yml)
+
+ [contributors]: https://github.com/Leaflet/Leaflet/graphs/contributors
+ [features]: http://leafletjs.com/#features
+ [plugins]: http://leafletjs.com/plugins.html
+ [well-documented]: http://leafletjs.com/reference.html "Leaflet API reference"
+ [source code]: https://github.com/Leaflet/Leaflet "Leaflet GitHub repository"
+ [hosted on GitHub]: http://github.com/Leaflet/Leaflet
+ [contribute]: https://github.com/Leaflet/Leaflet/blob/main/CONTRIBUTING.md "A guide to contributing to Leaflet"
+ [official website]: http://leafletjs.com
+ [download page]: http://leafletjs.com/download.html
+

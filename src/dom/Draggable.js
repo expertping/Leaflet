@@ -1,151 +1,220 @@
+import {Evented} from '../core/Events.js';
+import Browser from '../core/Browser.js';
+import * as DomEvent from './DomEvent.js';
+import * as DomUtil from './DomUtil.js';
+import * as Util from '../core/Util.js';
+import {Point} from '../geometry/Point.js';
+
 /*
- * L.Draggable allows you to add dragging capabilities to any element. Supports mobile devices too.
+ * @class Draggable
+ * @aka L.Draggable
+ * @inherits Evented
+ *
+ * A class for making DOM elements draggable (including touch support).
+ * Used internally for map and marker dragging. Only works for elements
+ * that were positioned with [`L.DomUtil.setPosition`](#domutil-setposition).
+ *
+ * @example
+ * ```js
+ * var draggable = new L.Draggable(elementToDrag);
+ * draggable.enable();
+ * ```
  */
 
-L.Draggable = L.Class.extend({
-	includes: L.Mixin.Events,
+const START = Browser.touch ? 'touchstart mousedown' : 'mousedown';
 
-	statics: {
-		START: L.Browser.touch ? 'touchstart' : 'mousedown',
-		END: L.Browser.touch ? 'touchend' : 'mouseup',
-		MOVE: L.Browser.touch ? 'touchmove' : 'mousemove',
-		TAP_TOLERANCE: 15
+export const Draggable = Evented.extend({
+
+	options: {
+		// @section
+		// @aka Draggable options
+		// @option clickTolerance: Number = 3
+		// The max number of pixels a user can shift the mouse pointer during a click
+		// for it to be considered a valid click (as opposed to a mouse drag).
+		clickTolerance: 3
 	},
 
-	initialize: function (element, dragStartTarget) {
+	// @constructor L.Draggable(el: HTMLElement, dragHandle?: HTMLElement, preventOutline?: Boolean, options?: Draggable options)
+	// Creates a `Draggable` object for moving `el` when you start dragging the `dragHandle` element (equals `el` itself by default).
+	initialize(element, dragStartTarget, preventOutline, options) {
+		Util.setOptions(this, options);
+
 		this._element = element;
 		this._dragStartTarget = dragStartTarget || element;
+		this._preventOutline = preventOutline;
 	},
 
-	enable: function () {
-		if (this._enabled) {
-			return;
-		}
-		L.DomEvent.addListener(this._dragStartTarget, L.Draggable.START, this._onDown, this);
+	// @method enable()
+	// Enables the dragging ability
+	enable() {
+		if (this._enabled) { return; }
+
+		DomEvent.on(this._dragStartTarget, START, this._onDown, this);
+
 		this._enabled = true;
 	},
 
-	disable: function () {
-		if (!this._enabled) {
-			return;
+	// @method disable()
+	// Disables the dragging ability
+	disable() {
+		if (!this._enabled) { return; }
+
+		// If we're currently dragging this draggable,
+		// disabling it counts as first ending the drag.
+		if (Draggable._dragging === this) {
+			this.finishDrag(true);
 		}
-		L.DomEvent.removeListener(this._dragStartTarget, L.Draggable.START, this._onDown);
+
+		DomEvent.off(this._dragStartTarget, START, this._onDown, this);
+
 		this._enabled = false;
 		this._moved = false;
 	},
 
-	_onDown: function (e) {
-		if ((!L.Browser.touch && e.shiftKey) || ((e.which !== 1) && (e.button !== 1) && !e.touches)) {
-			return;
-		}
-
-		this._simulateClick = true;
-
-		if (e.touches && e.touches.length > 1) {
-			this._simulateClick = false;
-			return;
-		}
-
-		var first = (e.touches && e.touches.length === 1 ? e.touches[0] : e),
-			el = first.target;
-
-		L.DomEvent.preventDefault(e);
-
-		if (L.Browser.touch && el.tagName.toLowerCase() === 'a') {
-			el.className += ' leaflet-active';
-		}
+	_onDown(e) {
+		// Ignore the event if disabled; this happens in IE11
+		// under some circumstances, see #3666.
+		if (!this._enabled) { return; }
 
 		this._moved = false;
-		if (this._moving) {
+
+		if (this._element.classList.contains('leaflet-zoom-anim')) { return; }
+
+		if (e.touches && e.touches.length !== 1) {
+			// Finish dragging to avoid conflict with touchZoom
+			if (Draggable._dragging === this) {
+				this.finishDrag();
+			}
 			return;
 		}
 
-		if (!L.Browser.touch) {
-			L.DomUtil.disableTextSelection();
-			this._setMovingCursor();
+		if (Draggable._dragging || e.shiftKey || ((e.button !== 0) && !e.touches)) { return; }
+		Draggable._dragging = this;  // Prevent dragging multiple objects at once.
+
+		if (this._preventOutline) {
+			DomUtil.preventOutline(this._element);
 		}
 
-		this._startPos = this._newPos = L.DomUtil.getPosition(this._element);
-		this._startPoint = new L.Point(first.clientX, first.clientY);
+		DomUtil.disableImageDrag();
+		DomUtil.disableTextSelection();
 
-		L.DomEvent.addListener(document, L.Draggable.MOVE, this._onMove, this);
-		L.DomEvent.addListener(document, L.Draggable.END, this._onUp, this);
+		if (this._moving) { return; }
+
+		// @event down: Event
+		// Fired when a drag is about to start.
+		this.fire('down');
+
+		const first = e.touches ? e.touches[0] : e,
+		    sizedParent = DomUtil.getSizedParentNode(this._element);
+
+		this._startPoint = new Point(first.clientX, first.clientY);
+		this._startPos = DomUtil.getPosition(this._element);
+
+		// Cache the scale, so that we can continuously compensate for it during drag (_onMove).
+		this._parentScale = DomUtil.getScale(sizedParent);
+
+		const mouseevent = e.type === 'mousedown';
+		DomEvent.on(document, mouseevent ? 'mousemove' : 'touchmove', this._onMove, this);
+		DomEvent.on(document, mouseevent ? 'mouseup' : 'touchend touchcancel', this._onUp, this);
 	},
 
-	_onMove: function (e) {
+	_onMove(e) {
+		// Ignore the event if disabled; this happens in IE11
+		// under some circumstances, see #3666.
+		if (!this._enabled) { return; }
+
 		if (e.touches && e.touches.length > 1) {
+			this._moved = true;
 			return;
 		}
 
-		L.DomEvent.preventDefault(e);
+		const first = (e.touches && e.touches.length === 1 ? e.touches[0] : e),
+		    offset = new Point(first.clientX, first.clientY)._subtract(this._startPoint);
 
-		var first = (e.touches && e.touches.length === 1 ? e.touches[0] : e);
+		if (!offset.x && !offset.y) { return; }
+		if (Math.abs(offset.x) + Math.abs(offset.y) < this.options.clickTolerance) { return; }
+
+		// We assume that the parent container's position, border and scale do not change for the duration of the drag.
+		// Therefore there is no need to account for the position and border (they are eliminated by the subtraction)
+		// and we can use the cached value for the scale.
+		offset.x /= this._parentScale.x;
+		offset.y /= this._parentScale.y;
+
+		DomEvent.preventDefault(e);
 
 		if (!this._moved) {
+			// @event dragstart: Event
+			// Fired when a drag starts
 			this.fire('dragstart');
+
 			this._moved = true;
+
+			document.body.classList.add('leaflet-dragging');
+
+			this._lastTarget = e.target || e.srcElement;
+			// IE and Edge do not give the <use> element, so fetch it
+			// if necessary
+			if (window.SVGElementInstance && this._lastTarget instanceof window.SVGElementInstance) {
+				this._lastTarget = this._lastTarget.correspondingUseElement;
+			}
+			this._lastTarget.classList.add('leaflet-drag-target');
 		}
+
+		this._newPos = this._startPos.add(offset);
 		this._moving = true;
 
-		var newPoint = new L.Point(first.clientX, first.clientY);
-		this._newPos = this._startPos.add(newPoint).subtract(this._startPoint);
-
-		L.Util.cancelAnimFrame(this._animRequest);
-		this._animRequest = L.Util.requestAnimFrame(this._updatePosition, this, true, this._dragStartTarget);
+		this._lastEvent = e;
+		this._updatePosition();
 	},
 
-	_updatePosition: function () {
-		this.fire('predrag');
-		L.DomUtil.setPosition(this._element, this._newPos);
-		this.fire('drag');
+	_updatePosition() {
+		const e = {originalEvent: this._lastEvent};
+
+		// @event predrag: Event
+		// Fired continuously during dragging *before* each corresponding
+		// update of the element's position.
+		this.fire('predrag', e);
+		DomUtil.setPosition(this._element, this._newPos);
+
+		// @event drag: Event
+		// Fired continuously during dragging.
+		this.fire('drag', e);
 	},
 
-	_onUp: function (e) {
-		if (this._simulateClick && e.changedTouches) {
-			var first = e.changedTouches[0],
-				el = first.target,
-				dist = (this._newPos && this._newPos.distanceTo(this._startPos)) || 0;
+	_onUp() {
+		// Ignore the event if disabled; this happens in IE11
+		// under some circumstances, see #3666.
+		if (!this._enabled) { return; }
+		this.finishDrag();
+	},
 
-			if (el.tagName.toLowerCase() === 'a') {
-				el.className = el.className.replace(' leaflet-active', '');
-			}
+	finishDrag(noInertia) {
+		document.body.classList.remove('leaflet-dragging');
 
-			if (dist < L.Draggable.TAP_TOLERANCE) {
-				this._simulateEvent('click', first);
-			}
+		if (this._lastTarget) {
+			this._lastTarget.classList.remove('leaflet-drag-target');
+			this._lastTarget = null;
 		}
 
-		if (!L.Browser.touch) {
-			L.DomUtil.enableTextSelection();
-			this._restoreCursor();
-		}
+		DomEvent.off(document, 'mousemove touchmove', this._onMove, this);
+		DomEvent.off(document, 'mouseup touchend touchcancel', this._onUp, this);
 
-		L.DomEvent.removeListener(document, L.Draggable.MOVE, this._onMove);
-		L.DomEvent.removeListener(document, L.Draggable.END, this._onUp);
+		DomUtil.enableImageDrag();
+		DomUtil.enableTextSelection();
 
-		if (this._moved) {
-			this.fire('dragend');
-		}
+		const fireDragend = this._moved && this._moving;
+
 		this._moving = false;
-	},
+		Draggable._dragging = false;
 
-	_setMovingCursor: function () {
-		document.body.className += ' leaflet-dragging';
-	},
-
-	_restoreCursor: function () {
-		document.body.className = document.body.className.replace(/ leaflet-dragging/g, '');
-	},
-
-	_simulateEvent: function (type, e) {
-		var simulatedEvent = document.createEvent('MouseEvents');
-
-		simulatedEvent.initMouseEvent(
-				type, true, true, window, 1,
-				e.screenX, e.screenY,
-				e.clientX, e.clientY,
-				false, false, false, false, 0, null);
-
-		e.target.dispatchEvent(simulatedEvent);
+		if (fireDragend) {
+			// @event dragend: DragEndEvent
+			// Fired when the drag ends.
+			this.fire('dragend', {
+				noInertia,
+				distance: this._newPos.distanceTo(this._startPos)
+			});
+		}
 	}
+
 });

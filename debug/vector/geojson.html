@@ -1,56 +1,161 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-	<title>Leaflet debug page</title>
-
-	<link rel="stylesheet" href="../../dist/leaflet.css" />
-	<!--[if lte IE 8]><link rel="stylesheet" href="../../dist/leaflet.ie.css" /><![endif]-->
-
-	<link rel="stylesheet" href="../css/screen.css" />
-
-	<script src="../leaflet-include.js"></script>
-</head>
-<body>
-
-	<div id="map" style="width: 600px; height: 600px; border: 1px solid #ccc"></div>
-	<button id="populate">Populate with 10 markers</button>
-
-	<script type="text/javascript" src="geojson-sample.js"></script>
-	<script type="text/javascript">
-
-		var cloudmadeUrl = 'http://{s}.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/997/256/{z}/{x}/{y}.png',
-			cloudmadeAttribution = 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
-			cloudmade = new L.TileLayer(cloudmadeUrl, {maxZoom: 18, attribution: cloudmadeAttribution});
-
-		var map = new L.Map('map', {
-			center: new L.LatLng(0.78, 102.37),
-			zoom: 7,
-			layers: [cloudmade]
-		});
-
-		var geojson = new L.GeoJSON();
-
-		/* points are rendered as markers by default, but you can change this:
-
-		var geojson = new L.GeoJSON(null, {
-			pointToLayer: function(latlng) { return new L.CircleMarker(latlng); }
-		});
-		*/
-
-		geojson.on('featureparse', function(e) {
-			// you can style features depending on their properties, etc.
-			var popupText = 'geometry type: ' + e.geometryType;
-
-			if (e.layer.setStyle && e.properties && e.properties.color) {
-				e.layer.setStyle({color: e.properties.color});
-				popupText += '<br/>color: ' + e.properties.color;
+	<head>
+		<meta charset="utf-8" />
+		<title>Leaflet debug page - GeoJSON</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+		<link rel="stylesheet" href="../../dist/leaflet.css" />
+		<link rel="stylesheet" href="../css/screen.css" />
+		<style>
+			.info {
+				padding: 6px 8px;
+				font: 14px/16px Arial, Helvetica, sans-serif;
+				background: white;
+				background: rgba(255,255,255,0.8);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
 			}
-			e.layer.bindPopup(popupText);
-		});
+			.info h4 {
+				margin: 0 0 5px;
+				color: #777;
+			}
+	
+			.legend {
+				text-align: left;
+				line-height: 18px;
+				color: #555;
+			}
+			.legend i {
+				width: 18px;
+				height: 18px;
+				float: left;
+				margin-right: 8px;
+				opacity: 0.7;
+			}
+		</style>
+		<script type="importmap">
+			{
+				"imports": {
+					"leaflet": "../../dist/leaflet-src.esm.js"
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<div id="map"></div>
+		<script type="module">
+			import {Map, TileLayer, Control, DomUtil, GeoJSON} from 'leaflet';
+			import statesData from './us-states.js';
 
-		geojson.addGeoJSON(geojsonSample);
+			const map = new Map('map').setView([37.8, -96], 4);
+			const tiles = new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png');
 
-		map.addLayer(geojson);
-	</script>
-</body>
+			map.addLayer(tiles);
+
+			// control that shows state info on hover
+			const info = new Control();
+
+			info.onAdd = function () {
+				this._div = DomUtil.create('div', 'info');
+				this.update();
+				return this._div;
+			};
+
+			info.update = function (props) {
+				this._div.innerHTML = `
+					<h4>US Population Density</h4>
+					${(props ? `<b>${props.name}</b><br />${props.density} people / mi<sup>2</sup>` : 'Hover over a state')}
+				`;
+			};
+
+			map.addControl(info);
+
+			// get color depending on population density value
+			function getColor(d) {
+				return (
+					d > 1000 ? '#800026' :
+					d > 500  ? '#BD0026' :
+					d > 200  ? '#E31A1C' :
+					d > 100  ? '#FC4E2A' :
+					d > 50   ? '#FD8D3C' :
+					d > 20   ? '#FEB24C' :
+					d > 10   ? '#FED976' :
+					'#FFEDA0'
+				);
+			}
+
+			function style(feature) {
+				return {
+					weight: 2,
+					opacity: 1,
+					color: 'white',
+					dashArray: '3',
+					fillOpacity: 0.7,
+					fillColor: getColor(feature.properties.density)
+				};
+			}
+
+			function highlightFeature(e) {
+				const layer = e.target;
+
+				layer.setStyle({
+					weight: 5,
+					color: '#666',
+					dashArray: '',
+					fillOpacity: 0.7
+				});
+
+				layer.bringToFront();
+
+				info.update(layer.feature.properties);
+			}
+
+			const geojson = new GeoJSON(statesData, {
+				style,
+				onEachFeature,
+				attribution: 'Population data &copy; <a href="http://census.gov/">US Census Bureau</a>'
+			});
+
+			map.addLayer(geojson);
+
+			function resetHighlight(e) {
+				geojson.resetStyle(e.target);
+				info.update();
+			}
+
+			function zoomToFeature(e) {
+				map.fitBounds(e.target.getBounds());
+			}
+
+			function onEachFeature(feature, layer) {
+				layer.on({
+					mouseover: highlightFeature,
+					mouseout: resetHighlight,
+					click: zoomToFeature
+				});
+			}
+
+			const legend = new Control({position: 'bottomright'});
+
+			legend.onAdd = function () {
+				const div = DomUtil.create('div', 'info legend');
+				const grades = [0, 10, 20, 50, 100, 200, 500, 1000];
+				const labels = [];
+
+				for (let i = 0; i < grades.length; i++) {
+					const from = grades[i];
+					const to = grades[i + 1];
+
+					labels.push(
+						`<i style="background: ${getColor(from + 1)};"></i> ${from + (to ? ` &ndash; ${to}` : '+')}`
+					);
+				}
+
+				div.innerHTML = labels.join('<br>');
+				return div;
+			};
+
+			legend.addTo(map);
+		</script>
+	</body>
 </html>

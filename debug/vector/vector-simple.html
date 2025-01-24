@@ -1,63 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-	<title>Leaflet debug page</title>
+	<head>
+		<meta charset="utf-8" />
+		<title>Leaflet debug page - Vector Simple</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+		<link rel="stylesheet" href="../../dist/leaflet.css" />
+		<link rel="stylesheet" href="../css/mobile.css" />
+		<script type="importmap">
+			{
+				"imports": {
+					"leaflet": "../../dist/leaflet-src.esm.js"
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<div id="map"></div>
+		<script type="module">
+			import {Map, TileLayer, Marker, Circle, Polygon} from 'leaflet';
 
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+			const map = new Map('map')
+				.setView([51.505, -0.09], 13);
 
-	<link rel="stylesheet" href="../../dist/leaflet.css" />
-	<!--[if lte IE 8]><link rel="stylesheet" href="../../dist/leaflet.ie.css" /><![endif]-->
+			map.addLayer(new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18}));
 
-	<link rel="stylesheet" href="../css/mobile.css" />
+			new Marker([51.5, -0.09])
+				.bindPopup('<b>Hello world!</b><br />I am a popup.')
+				.addTo(map);
 
-	<script src="../leaflet-include.js"></script>
-</head>
-<body>
-	<div id="map"></div>
+			new Circle([51.508, -0.11], 500, {color: '#f03', opacity: 0.7})
+				.bindPopup('I am a circle.')
+				.addTo(map);
 
-	<script>
-
-		var map = new L.Map('map');
-
-		var cloudmade = new L.TileLayer('http://{s}.tile.cloudmade.com/{key}/{styleId}/256/{z}/{x}/{y}.png', {
-			maxZoom: 18,
-			attribution: 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
-			key: 'BC9A493B41014CAABB98F0471D759707',
-			styleId: 997
-		});
-
-		map.setView(new L.LatLng(51.505, -0.09), 13).addLayer(cloudmade);
-
-
-		var markerLocation = new L.LatLng(51.5, -0.09),
-			marker = new L.Marker(markerLocation);
-
-		map.addLayer(marker);
-
-		marker.bindPopup("<b>Hello world!</b><br />I am a popup.").openPopup();
-
-
-		var circleLocation = new L.LatLng(51.508, -0.11),
-			circleOptions = {
-				color: '#f03',
-				opacity: 0.7
-			},
-			circle = new L.Circle(circleLocation, 500, circleOptions);
-
-		circle.bindPopup("I am a circle.");
-
-		map.addLayer(circle);
-
-
-		var p1 = new L.LatLng(51.509, -0.08),
-			p2 = new L.LatLng(51.503, -0.06),
-			p3 = new L.LatLng(51.51, -0.047),
-			polygonPoints = [ p1, p2, p3 ],
-			polygon = new L.Polygon(polygonPoints);
-
-		polygon.bindPopup("I am a polygon.");
-
-		map.addLayer(polygon);
-	</script>
-</body>
+			new Polygon([[51.509, -0.08], [51.503, -0.06], [51.51,  -0.047]])
+				.bindPopup('I am a polygon.')
+				.addTo(map);
+		</script>
+	</body>
 </html>

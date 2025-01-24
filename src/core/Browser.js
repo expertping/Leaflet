@@ -1,53 +1,68 @@
-(function () {
-	var ua = navigator.userAgent.toLowerCase(),
-		ie = !!window.ActiveXObject,
-		webkit = ua.indexOf("webkit") !== -1,
-		mobile = typeof orientation !== 'undefined' ? true : false,
-		android = ua.indexOf("android") !== -1,
-		opera = window.opera;
+/*
+ * @namespace Browser
+ * @aka L.Browser
+ *
+ * A namespace with static properties for browser/feature detection used by Leaflet internally.
+ *
+ * @example
+ *
+ * ```js
+ * if (L.Browser.chrome) {
+ *   alert('You are running Chrome!');
+ * }
+ * ```
+ */
 
-	L.Browser = {
-		ie: ie,
-		ie6: ie && !window.XMLHttpRequest,
+// @property chrome: Boolean; `true` for the Chrome browser.
+const chrome = userAgentContains('chrome');
 
-		webkit: webkit,
-		webkit3d: webkit && ('WebKitCSSMatrix' in window) && ('m11' in new window.WebKitCSSMatrix()),
+// @property safari: Boolean; `true` for the Safari browser.
+const safari = !chrome && userAgentContains('safari');
 
-		gecko: ua.indexOf("gecko") !== -1,
+// @property mobile: Boolean; `true` for all browsers running in a mobile device.
+const mobile = typeof orientation !== 'undefined' || userAgentContains('mobile');
 
-		opera: opera,
+// @property pointer: Boolean
+// `true` for all browsers supporting [pointer events](https://msdn.microsoft.com/en-us/library/dn433244%28v=vs.85%29.aspx).
+const pointer = typeof window === 'undefined' ? false : !!window.PointerEvent;
 
-		android: android,
-		mobileWebkit: mobile && webkit,
-		mobileOpera: mobile && opera,
+// @property touchNative: Boolean
+// `true` for all browsers supporting [touch events](https://developer.mozilla.org/docs/Web/API/Touch_events).
+// **This does not necessarily mean** that the browser is running in a computer with
+// a touchscreen, it only means that the browser is capable of understanding
+// touch events.
+const touchNative = typeof window === 'undefined' ? false : 'ontouchstart' in window || !!(window.TouchEvent);
 
-		mobile: mobile,
-		touch: (function () {
-			var touchSupported = false,
-				startName = 'ontouchstart';
+// @property touch: Boolean
+// `true` for all browsers supporting either [touch](#browser-touch) or [pointer](#browser-pointer) events.
+// Note: pointer events will be preferred (if available), and processed for all `touch*` listeners.
+const touch = touchNative || pointer;
 
-			// WebKit, etc
-			if (startName in document.documentElement) {
-				return true;
-			}
+// @property retina: Boolean
+// `true` for browsers on a high-resolution "retina" screen or on any screen when browser's display zoom is more than 100%.
+const retina = typeof window === 'undefined' || typeof window.devicePixelRatio === 'undefined' ? false : window.devicePixelRatio > 1;
 
-			// Firefox/Gecko
-			var e = document.createElement('div');
+// @property mac: Boolean; `true` when the browser is running in a Mac platform
+const mac = typeof navigator === 'undefined' || typeof navigator.platform === 'undefined' ? false : navigator.platform.startsWith('Mac');
 
-			// If no support for basic event stuff, unlikely to have touch support
-			if (!e.setAttribute || !e.removeAttribute) {
-				return false;
-			}
+// @property mac: Boolean; `true` when the browser is running in a Linux platform
+const linux = typeof navigator === 'undefined' || typeof navigator.platform === 'undefined' ? false : navigator.platform.startsWith('Linux');
 
-			e.setAttribute(startName, 'return;');
-			if (typeof e[startName] === 'function') {
-				touchSupported = true;
-			}
+function userAgentContains(str) {
+	if (typeof navigator === 'undefined' || typeof navigator.userAgent === 'undefined') {
+		return false;
+	}
+	return navigator.userAgent.toLowerCase().includes(str);
+}
 
-			e.removeAttribute(startName);
-			e = null;
-
-			return touchSupported;
-		}())
-	};
-}());
+export default {
+	chrome,
+	safari,
+	mobile,
+	pointer,
+	touch,
+	touchNative,
+	retina,
+	mac,
+	linux
+};

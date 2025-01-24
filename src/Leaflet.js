@@ -1,18 +1,24 @@
-var L, originalL;
 
-if (typeof exports !== 'undefined') {
-	L = exports;
-} else {
-	L = {};
-	
-	originalL = window.L;
+import {version} from '../package.json';
+export {version};
 
-	L.noConflict = function () {
-		window.L = originalL;
-		return L;
-	};
+// control
+export * from './control/index.js';
 
-	window.L = L;
-}
+// core
+export * from './core/index.js';
 
-L.version = '0.4';
+// dom
+export * from './dom/index.js';
+
+// geometry
+export * from './geometry/index.js';
+
+// geo
+export * from './geo/index.js';
+
+// layer
+export * from './layer/index.js';
+
+// map
+export * from './map/index.js';
