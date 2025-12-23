@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {Circle, Map} from 'leaflet';
+import {Circle, LeafletMap, CRS, Transformation} from 'leaflet';
 import {createContainer, removeMapContainer} from '../../SpecHelper.js';
 
 describe('Circle', () => {
@@ -7,7 +7,7 @@ describe('Circle', () => {
 
 	beforeEach(() => {
 		container = container = createContainer();
-		map = new Map(container);
+		map = new LeafletMap(container);
 		map.setView([0, 0], 4);
 		circle = new Circle([50, 30], {radius: 200}).addTo(map);
 	});
@@ -21,13 +21,6 @@ describe('Circle', () => {
 			const circle = new Circle([0, 0]);
 			expect(circle.getRadius()).to.eql(10);
 		});
-
-		it('throws error if radius is NaN', () => {
-			expect(() => {
-				new Circle([0, 0], NaN);
-			}).to.throw('Circle radius cannot be NaN');
-		});
-
 	});
 
 	describe('#getBounds', () => {
@@ -46,5 +39,40 @@ describe('Circle', () => {
 			expect(bounds.getSouthWest()).nearLatLng([49.99820, 29.99720]);
 			expect(bounds.getNorthEast()).nearLatLng([50.00179, 30.00279]);
 		});
+	});
+
+	describe('CRS Simple', () => {
+		it('returns a positive radius if the x axis of L.CRS.Simple is inverted', () => {
+			map.remove();
+
+			class crs extends CRS.Simple {
+				static transformation = new Transformation(-1, 0, -1, 0);
+			}
+			map = new LeafletMap(container, {
+				crs
+			});
+			map.setView([0, 0], 4);
+
+			const circle = new Circle([0, 0], {radius: 200}).addTo(map);
+
+			expect(circle._radius).to.eql(3200);
+		});
+	});
+});
+
+describe('Circle#setStyle', () => {
+	it('updates radius when style includes radius', () => {
+		const circle = new Circle([0, 0], {radius: 10});
+
+		circle.setStyle({radius: 20});
+		expect(circle.getRadius()).to.equal(20);
+	});
+
+	it('does not change radius if radius not provided', () => {
+		const circle = new Circle([0, 0], {radius: 10});
+
+		circle.setStyle({color: 'red'});
+		expect(circle.options.color).to.equal('red');
+		expect(circle.getRadius()).to.equal(10);
 	});
 });

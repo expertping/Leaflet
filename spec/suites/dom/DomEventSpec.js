@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {DomEvent, Map, Util} from 'leaflet';
+import {DomEvent, LeafletMap, Util} from 'leaflet';
 import sinon from 'sinon';
 import UIEventSimulator from 'ui-event-simulator';
 
@@ -21,12 +21,12 @@ describe('DomEvent', () => {
 			expect(() => DomEvent.on({}, 'click', Util.falseFn)).to.throw();
 			expect(() => DomEvent.disableScrollPropagation({})).to.throw();
 			expect(() => DomEvent.disableClickPropagation({})).to.throw();
-			expect(() => DomEvent.getMousePosition({clientX: 0, clientY: 0}, {})).to.throw();
+			expect(() => DomEvent.getPointerPosition({clientX: 0, clientY: 0}, {})).to.throw();
 			// .off and .isExternalTarget do not throw atm
 		});
 	});
 
-	describe('#on (addListener)', () => {
+	describe('#on', () => {
 		it('throws when type is undefined and context is falseFn', () => {
 			expect(() => DomEvent.on(el, undefined, Util.falseFn)).to.throw();
 		});
@@ -67,64 +67,64 @@ describe('DomEvent', () => {
 			expect(() => DomEvent.on(el, 'dblclick', undefined)).to.throw();
 		});
 
-		it('throws when type is "mousedown" and context is null', () => {
-			expect(() => DomEvent.on(el, 'mousedown', null)).to.throw();
+		it('throws when type is "pointerdown" and context is null', () => {
+			expect(() => DomEvent.on(el, 'pointerdown', null)).to.throw();
 		});
 
-		it('throws when type is "mousedown" and context is false', () => {
-			expect(() => DomEvent.on(el, 'mousedown', false)).to.throw();
+		it('throws when type is "pointerdown" and context is false', () => {
+			expect(() => DomEvent.on(el, 'pointerdown', false)).to.throw();
 		});
 
-		it('throws when type is "mousedown" and context is undefined', () => {
-			expect(() => DomEvent.on(el, 'mousedown', undefined)).to.throw();
+		it('throws when type is "pointerdown" and context is undefined', () => {
+			expect(() => DomEvent.on(el, 'pointerdown', undefined)).to.throw();
 		});
 
-		it('throws when type is "mouseup" and context is null', () => {
-			expect(() => DomEvent.on(el, 'mouseup', null)).to.throw();
+		it('throws when type is "pointerup" and context is null', () => {
+			expect(() => DomEvent.on(el, 'pointerup', null)).to.throw();
 		});
 
-		it('throws when type is "mouseup" and context is false', () => {
-			expect(() => DomEvent.on(el, 'mouseup', false)).to.throw();
+		it('throws when type is "pointerup" and context is false', () => {
+			expect(() => DomEvent.on(el, 'pointerup', false)).to.throw();
 		});
 
-		it('throws when type is "mouseup" and context is undefined', () => {
-			expect(() => DomEvent.on(el, 'mouseup', undefined)).to.throw();
+		it('throws when type is "pointerup" and context is undefined', () => {
+			expect(() => DomEvent.on(el, 'pointerup', undefined)).to.throw();
 		});
 
-		it('throws when type is "mouseover" and context is null', () => {
-			expect(() => DomEvent.on(el, 'mouseover', null)).to.throw();
+		it('throws when type is "pointerover" and context is null', () => {
+			expect(() => DomEvent.on(el, 'pointerover', null)).to.throw();
 		});
 
-		it('throws when type is "mouseover" and context is false', () => {
-			expect(() => DomEvent.on(el, 'mouseover', false)).to.throw();
+		it('throws when type is "pointerover" and context is false', () => {
+			expect(() => DomEvent.on(el, 'pointerover', false)).to.throw();
 		});
 
-		it('throws when type is "mouseover" and context is undefined', () => {
-			expect(() => DomEvent.on(el, 'mouseover', undefined)).to.throw();
+		it('throws when type is "pointerover" and context is undefined', () => {
+			expect(() => DomEvent.on(el, 'pointerover', undefined)).to.throw();
 		});
 
-		it('throws when type is "mouseout" and context is null', () => {
-			expect(() => DomEvent.on(el, 'mouseout', null)).to.throw();
+		it('throws when type is "pointerout" and context is null', () => {
+			expect(() => DomEvent.on(el, 'pointerout', null)).to.throw();
 		});
 
-		it('throws when type is "mouseout" and context is false', () => {
-			expect(() => DomEvent.on(el, 'mouseout', false)).to.throw();
+		it('throws when type is "pointerout" and context is false', () => {
+			expect(() => DomEvent.on(el, 'pointerout', false)).to.throw();
 		});
 
-		it('throws when type is "mouseout" and context is undefined', () => {
-			expect(() => DomEvent.on(el, 'mouseout', undefined)).to.throw();
+		it('throws when type is "pointerout" and context is undefined', () => {
+			expect(() => DomEvent.on(el, 'pointerout', undefined)).to.throw();
 		});
 
-		it('throws when type is "mousemove" and context is null', () => {
-			expect(() => DomEvent.on(el, 'mousemove', null)).to.throw();
+		it('throws when type is "pointermove" and context is null', () => {
+			expect(() => DomEvent.on(el, 'pointermove', null)).to.throw();
 		});
 
-		it('throws when type is "mousemove" and context is false', () => {
-			expect(() => DomEvent.on(el, 'mousemove', false)).to.throw();
+		it('throws when type is "pointermove" and context is false', () => {
+			expect(() => DomEvent.on(el, 'pointermove', false)).to.throw();
 		});
 
-		it('throws when type is "mousemove" and context is undefined', () => {
-			expect(() => DomEvent.on(el, 'mousemove', undefined)).to.throw();
+		it('throws when type is "pointermove" and context is undefined', () => {
+			expect(() => DomEvent.on(el, 'pointermove', undefined)).to.throw();
 		});
 
 		it('throws when type is "contextmenu" and context is null', () => {
@@ -253,7 +253,7 @@ describe('DomEvent', () => {
 
 		it('binds "this" to the given context when passed an event map', () => {
 			const listener = sinon.spy(),
-			    ctx = {foo: 'bar'};
+			ctx = {foo: 'bar'};
 
 			DomEvent.on(el, {click: listener}, ctx);
 
@@ -264,7 +264,7 @@ describe('DomEvent', () => {
 
 		it('binds "this" to the given context when passed an event map with multiple events', () => {
 			const listener2 = sinon.spy(),
-			    ctx = {foo: 'bar'};
+			ctx = {foo: 'bar'};
 
 			DomEvent.on(el, {click: listener, keypress: listener2}, ctx);
 
@@ -298,13 +298,9 @@ describe('DomEvent', () => {
 
 			expect(res).to.equal(DomEvent);
 		});
-
-		it('is aliased to addListener ', () => {
-			expect(DomEvent.on).to.equal(DomEvent.addListener);
-		});
 	});
 
-	describe('#off (removeListener)', () => {
+	describe('#off', () => {
 		it('removes a previously added listener', () => {
 			DomEvent.on(el, 'click', listener);
 			DomEvent.off(el, 'click', listener);
@@ -340,7 +336,7 @@ describe('DomEvent', () => {
 
 		it('removes a previously added listener when passed an event map', () => {
 			const listener = sinon.spy(),
-			    events = {click: listener};
+			events = {click: listener};
 
 			DomEvent.on(el, events);
 			DomEvent.off(el, events);
@@ -352,7 +348,7 @@ describe('DomEvent', () => {
 
 		it('removes a previously added listener when passed an event map with multiple events', () => {
 			const listener2 = sinon.spy(),
-			    events = {click: listener, keypress: listener2};
+			events = {click: listener, keypress: listener2};
 
 			DomEvent.on(el, events);
 			DomEvent.off(el, events);
@@ -366,7 +362,7 @@ describe('DomEvent', () => {
 
 		it('removes a previously added event when passed an event map with multiple events', () => {
 			const listener2 = sinon.spy(),
-			    events = {click: listener, keypress: listener2},
+			events = {click: listener, keypress: listener2},
 			events2 = {click: listener};
 
 			DomEvent.on(el, events);
@@ -381,7 +377,7 @@ describe('DomEvent', () => {
 
 		it('removes listener added with context', () => {
 			const listener = sinon.spy(),
-			    ctx = {foo: 'bar'};
+			ctx = {foo: 'bar'};
 
 			DomEvent.on(el, 'click', listener, ctx);
 			DomEvent.off(el, 'click', listener, ctx);
@@ -393,8 +389,8 @@ describe('DomEvent', () => {
 
 		it('removes listener added with context when passed an event map', () => {
 			const listener = sinon.spy(),
-			    events = {click: listener},
-			    ctx = {foo: 'bar'};
+			events = {click: listener},
+			ctx = {foo: 'bar'};
 
 			DomEvent.on(el, events, ctx);
 			DomEvent.off(el, events, ctx);
@@ -406,9 +402,9 @@ describe('DomEvent', () => {
 
 		it('removes listener added with context when passed an event map with multiple events', () => {
 			const listener2 = sinon.spy(),
-			    events = {click: listener, keypress: listener2},
+			events = {click: listener, keypress: listener2},
 			events2 = {click: listener},
-			    ctx = {foo: 'bar'};
+			ctx = {foo: 'bar'};
 
 			DomEvent.on(el, events, ctx);
 			DomEvent.off(el, events2, ctx);
@@ -443,7 +439,7 @@ describe('DomEvent', () => {
 
 		it('only removes listener when proper context specified when passed an event map', () => {
 			let listener = sinon.spy(),
-			    events = {click: listener};
+			events = {click: listener};
 			const ctx = {foo: 'bar'};
 
 			DomEvent.on(el, events);
@@ -454,7 +450,7 @@ describe('DomEvent', () => {
 			sinon.assert.called(listener);
 
 			listener = sinon.spy();
-			   events = {click: listener};
+			events = {click: listener};
 
 			DomEvent.on(el, events, ctx);
 			DomEvent.off(el, events);
@@ -519,10 +515,6 @@ describe('DomEvent', () => {
 
 			expect(res).to.equal(DomEvent);
 		});
-
-		it('is aliased to removeListener ', () => {
-			expect(DomEvent.off).to.equal(DomEvent.removeListener);
-		});
 	});
 
 	describe('#stopPropagation', () => {
@@ -557,12 +549,11 @@ describe('DomEvent', () => {
 			const child = document.createElement('div');
 			el.appendChild(child);
 			DomEvent.disableClickPropagation(child);
-			DomEvent.on(el, 'dblclick contextmenu mousedown touchstart', listener);
+			DomEvent.on(el, 'dblclick contextmenu pointerdown', listener);
 
 			UIEventSimulator.fire('dblclick', child);
 			UIEventSimulator.fire('contextmenu', child);
-			UIEventSimulator.fire('mousedown', child);
-			UIEventSimulator.fire('touchstart', child, {touches: []});
+			UIEventSimulator.fire('pointerdown', child);
 
 			expect(listener.notCalled).to.be.true;
 		});
@@ -575,7 +566,7 @@ describe('DomEvent', () => {
 			const grandChild = document.createElement('div');
 			child.appendChild(grandChild);
 
-			const map = new Map(el).setView([0, 0], 0);
+			const map = new LeafletMap(el).setView([0, 0], 0);
 			const mapClickListener = sinon.spy();
 			const mapOtherListener = sinon.spy();
 			map.on('click', mapClickListener);          // control case
@@ -599,20 +590,13 @@ describe('DomEvent', () => {
 	});
 
 	describe('#preventDefault', () => {
-		function isPrevented(e) {
-			if ('defaultPrevented' in e) {
-				return e.defaultPrevented;
-			}
-			return !e.returnValue; // IE<11
-		}
-
 		it('prevents the default action of event', (done) => {
 			DomEvent.on(el, 'click', (e) => {
-				expect(isPrevented(e)).not.to.be.true; // control case
+				expect(e.defaultPrevented).not.to.be.true; // control case
 
 				DomEvent.preventDefault(e);
 
-				expect(isPrevented(e)).to.be.true;
+				expect(e.defaultPrevented).to.be.true;
 				done();
 			});
 

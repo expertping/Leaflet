@@ -1,7 +1,7 @@
-import {Point, toPoint} from './Point.js';
-import {toLatLng} from '../geo/LatLng.js';
+import {Point} from './Point.js';
+import {LatLng} from '../geo/LatLng.js';
 import {centroid} from './PolyUtil.js';
-import {toLatLngBounds} from '../geo/LatLngBounds.js';
+import {LatLngBounds} from '../geo/LatLngBounds.js';
 
 
 /*
@@ -28,11 +28,11 @@ export function simplify(points, tolerance) {
 
 	const sqTolerance = tolerance * tolerance;
 
-	    // stage 1: vertex reduction
-	    points = _reducePoints(points, sqTolerance);
+	// stage 1: vertex reduction
+	points = _reducePoints(points, sqTolerance);
 
-	    // stage 2: Douglas-Peucker simplification
-	    points = _simplifyDP(points, sqTolerance);
+	// stage 2: Douglas-Peucker simplification
+	points = _simplifyDP(points, sqTolerance);
 
 	return points;
 }
@@ -53,10 +53,8 @@ export function closestPointOnSegment(p, p1, p2) {
 function _simplifyDP(points, sqTolerance) {
 
 	const len = points.length,
-	    ArrayConstructor = typeof Uint8Array !== `${undefined}` ? Uint8Array : Array,
-	    markers = new ArrayConstructor(len);
-
-	    markers[0] = markers[len - 1] = 1;
+	markers = new Uint8Array(len);
+	markers[0] = markers[len - 1] = 1;
 
 	_simplifyDPStep(points, markers, sqTolerance, 0, len - 1);
 
@@ -120,12 +118,12 @@ let _lastCode;
 // points that are on the screen or near, increasing performance.
 export function clipSegment(a, b, bounds, useLastCode, round) {
 	let codeA = useLastCode ? _lastCode : _getBitCode(a, bounds),
-	    codeB = _getBitCode(b, bounds),
+	codeB = _getBitCode(b, bounds),
 
-	    codeOut, p, newCode;
+	codeOut, p, newCode;
 
-	    // save 2nd code to avoid calculating it on the next segment
-	    _lastCode = codeB;
+	// save 2nd code to avoid calculating it on the next segment
+	_lastCode = codeB;
 
 	while (true) {
 		// if a,b is inside the clip window (trivial accept)
@@ -155,9 +153,9 @@ export function clipSegment(a, b, bounds, useLastCode, round) {
 
 export function _getEdgeIntersection(a, b, code, bounds, round) {
 	const dx = b.x - a.x,
-	      dy = b.y - a.y,
-	      min = bounds.min,
-	      max = bounds.max;
+	dy = b.y - a.y,
+	min = bounds.min,
+	max = bounds.max;
 	let x, y;
 
 	if (code & 8) { // top
@@ -201,17 +199,17 @@ export function _getBitCode(p, bounds) {
 // square distance (to avoid unnecessary Math.sqrt calls)
 function _sqDist(p1, p2) {
 	const dx = p2.x - p1.x,
-	    dy = p2.y - p1.y;
+	dy = p2.y - p1.y;
 	return dx * dx + dy * dy;
 }
 
 // return closest point on segment or distance to that point
 export function _sqClosestPointOnSegment(p, p1, p2, sqDist) {
 	let x = p1.x,
-	    y = p1.y,
-	    dx = p2.x - x,
-	    dy = p2.y - y,
-	    t;
+	y = p1.y,
+	dx = p2.x - x,
+	dy = p2.y - y,
+	t;
 	const dot = dx * dx + dy * dy;
 
 	if (dot > 0) {
@@ -254,9 +252,9 @@ export function polylineCenter(latlngs, crs) {
 		latlngs = latlngs[0];
 	}
 
-	let centroidLatLng = toLatLng([0, 0]);
+	let centroidLatLng = new LatLng([0, 0]);
 
-	const bounds = toLatLngBounds(latlngs);
+	const bounds = new LatLngBounds(latlngs);
 	const areaBounds = bounds.getNorthWest().distanceTo(bounds.getSouthWest()) * bounds.getNorthEast().distanceTo(bounds.getNorthWest());
 	// tests showed that below 1700 rounding errors are happening
 	if (areaBounds < 1700) {
@@ -267,8 +265,8 @@ export function polylineCenter(latlngs, crs) {
 	const len = latlngs.length;
 	const points = [];
 	for (i = 0; i < len; i++) {
-		const latlng = toLatLng(latlngs[i]);
-		points.push(crs.project(toLatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
+		const latlng = new LatLng(latlngs[i]);
+		points.push(crs.project(new LatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
 	}
 
 	for (i = 0, halfDist = 0; i < len - 1; i++) {
@@ -296,6 +294,6 @@ export function polylineCenter(latlngs, crs) {
 		}
 	}
 
-	const latlngCenter = crs.unproject(toPoint(center));
-	return toLatLng([latlngCenter.lat + centroidLatLng.lat, latlngCenter.lng + centroidLatLng.lng]);
+	const latlngCenter = crs.unproject(new Point(center));
+	return new LatLng([latlngCenter.lat + centroidLatLng.lat, latlngCenter.lng + centroidLatLng.lng]);
 }

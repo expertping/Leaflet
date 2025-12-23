@@ -1,10 +1,10 @@
 import {expect} from 'chai';
-import {Browser, Map, Point, extend} from 'leaflet';
+import {Browser, LeafletMap, Point} from 'leaflet';
 import sinon from 'sinon';
 import UIEventSimulator from 'ui-event-simulator';
 import {createContainer, removeMapContainer} from '../../SpecHelper.js';
 
-describe('Map.TapHoldSpec.js', () => {
+describe('LeafletMap.TapHoldSpec.js', () => {
 	let container, clock, spy, map;
 
 	const posStart = {clientX:1, clientY:1};
@@ -13,13 +13,15 @@ describe('Map.TapHoldSpec.js', () => {
 
 	beforeEach(() => {
 		container = createContainer();
-		map = new Map(container, {
+		map = new LeafletMap(container, {
 			center: [51.505, -0.09],
 			zoom: 13,
 			tapHold: true
 		});
 
-		clock = sinon.useFakeTimers();
+		clock = sinon.useFakeTimers({
+			toFake: ['setTimeout', 'clearTimeout', 'Date']
+		});
 		clock.tick(1000);
 		spy = sinon.spy();
 
@@ -31,7 +33,7 @@ describe('Map.TapHoldSpec.js', () => {
 	});
 
 	afterEach(() => {
-		UIEventSimulator.fire('touchend', container);
+		UIEventSimulator.fire('pointerdown', container);
 		for (let id = 0; id <= 2; id++) { // reset pointers (for prosphetic-hand)
 			UIEventSimulator.fire('pointercancel', container, {pointerId:id});
 		}
@@ -40,7 +42,6 @@ describe('Map.TapHoldSpec.js', () => {
 	});
 
 	it('fires synthetic contextmenu after hold delay>600', () => {
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(550);
 
@@ -56,27 +57,22 @@ describe('Map.TapHoldSpec.js', () => {
 		expect(event.originalEvent._simulated).to.be.true;
 	});
 
-	it('does not fire contextmenu when touches > 1', () => {
+	it('does not fire contextmenu when multiple pointers touches', () => {
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(100);
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart, posNear]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:1, ...posNear});
 		clock.tick(550);
 
 		expect(spy.notCalled).to.be.true;
 	});
 
-	it('does not fire contextmenu when touches > 1 (case:2)', () => {
+	it('does not fire contextmenu when multiple pointers touches > 1 (case:2)', () => {
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(100);
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart, posNear]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:1, ...posNear});
 		clock.tick(100);
-		UIEventSimulator.fire('touchend', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerup', container, {pointerId:0, ...posNear});
 		clock.tick(450);
 
@@ -92,7 +88,6 @@ describe('Map.TapHoldSpec.js', () => {
 
 	it('does not conflict with native contextmenu', () => {
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(550);
 
@@ -115,21 +110,17 @@ describe('Map.TapHoldSpec.js', () => {
 		map.on('click', clickSpy);
 
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(650);
-		UIEventSimulator.fire('touchend', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerup', container, {pointerId:0, ...posNear});
 
 		expect(clickSpy.notCalled).to.be.true;
 	});
 
 	it('allows short movements', () => {
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(550);
 
-		UIEventSimulator.fire('touchmove', container, {touches: [posNear]});
 		UIEventSimulator.fire('pointermove', container, {pointerId:0, ...posNear});
 
 		clock.tick(100);
@@ -139,13 +130,11 @@ describe('Map.TapHoldSpec.js', () => {
 
 	it('ignores long movements', () => {
 		expect(new Point(posStart.clientX, posStart.clientY).distanceTo([posFar.clientX, posFar.clientY]))
-		  .to.be.above(map.options.tapTolerance);
+			.to.be.above(map.options.tapTolerance);
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(550);
 
-		UIEventSimulator.fire('touchmove', container, {touches: [posFar]});
 		UIEventSimulator.fire('pointermove', container, {pointerId:0, ...posFar});
 
 		clock.tick(100);
@@ -154,17 +143,16 @@ describe('Map.TapHoldSpec.js', () => {
 	});
 
 	it('.originalEvent has expected properties', () => {
-		extend(posStart, {
+		Object.assign(posStart, {
 			screenX: 2,
 			screenY: 2,
 		});
 
-		UIEventSimulator.fire('touchstart', container, {touches: [posStart]});
 		UIEventSimulator.fire('pointerdown', container, {pointerId:0, ...posStart});
 		clock.tick(650);
 
 		const originalEvent = spy.lastCall.args[0].originalEvent;
-		const expectedProps = extend({
+		const expectedProps = Object.assign({
 			type: 'contextmenu',
 			bubbles: true,
 			cancelable: true,

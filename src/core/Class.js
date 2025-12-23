@@ -1,7 +1,6 @@
 import * as Util from './Util.js';
 
 // @class Class
-// @aka L.Class
 
 // @section
 // @uninheritable
@@ -9,58 +8,43 @@ import * as Util from './Util.js';
 // Thanks to John Resig and Dean Edwards for inspiration!
 
 export class Class {
-	// @function extend(props: Object): Function
-	// [Extends the current class](#class-inheritance) given the properties to be included.
-	// Returns a Javascript function that is a class constructor (to be called with `new`).
-	static extend({statics, includes, ...props}) {
-		const NewClass = class extends this {};
-
-		// inherit parent's static properties
-		Object.setPrototypeOf(NewClass, this);
-
-		const parentProto = this.prototype;
-		const proto = NewClass.prototype;
-
-		// mix static properties into the class
-		if (statics) {
-			Util.extend(NewClass, statics);
-		}
-
-		// mix includes into the prototype
-		if (includes) {
-			Util.extend.apply(null, [proto].concat(includes));
-		}
-
-		// mix given properties into the prototype
-		Util.extend(proto, props);
-
-		// merge options
-		if (proto.options) {
-			proto.options = parentProto.options ? Object.create(parentProto.options) : {};
-			Util.extend(proto.options, props.options);
-		}
-
-		proto._initHooks = [];
-
-		return NewClass;
-	}
-
 	// @function include(properties: Object): this
 	// [Includes a mixin](#class-includes) into the current class.
 	static include(props) {
 		const parentOptions = this.prototype.options;
-		Util.extend(this.prototype, props);
+		for (const k of getAllMethodNames(props)) {
+			this.prototype[k] = props[k];
+		}
 		if (props.options) {
 			this.prototype.options = parentOptions;
 			this.mergeOptions(props.options);
 		}
+		return this;
+
+		function *getAllMethodNames(obj) {
+			do {
+				if (obj === Object || obj === Object.prototype) {
+					break;
+				}
+				for (const k of Object.getOwnPropertyNames(obj)) {
+					yield k;
+				}
+			} while ((obj = Object.getPrototypeOf(obj)) !== undefined);
+		}
+	}
+
+	// @function setDefaultOptions(options: Object): this
+	// Configures the [default `options`](#class-options) on the prototype of this class.
+	static setDefaultOptions(options) {
+		Util.setOptions(this.prototype, options);
 		return this;
 	}
 
 	// @function mergeOptions(options: Object): this
 	// [Merges `options`](#class-options) into the defaults of the class.
 	static mergeOptions(options) {
-		Util.extend(this.prototype.options, options);
+		this.prototype.options ??= {};
+		Object.assign(this.prototype.options, options);
 		return this;
 	}
 
@@ -71,7 +55,9 @@ export class Class {
 			this[fn].apply(this, args);
 		};
 
-		this.prototype._initHooks = this.prototype._initHooks || [];
+		if (!Object.hasOwn(this.prototype, '_initHooks')) { // do not use ??= here
+			this.prototype._initHooks = [];
+		}
 		this.prototype._initHooks.push(init);
 		return this;
 	}

@@ -1,14 +1,14 @@
 import {Map} from '../Map.js';
 import {Handler} from '../../core/Handler.js';
 import {on, off, stop} from '../../dom/DomEvent.js';
-import {toPoint} from '../../geometry/Point.js';
+import {Point} from '../../geometry/Point.js';
 
 
 /*
- * L.Map.Keyboard is handling keyboard interaction with the map, enabled by default.
+ * Map.Keyboard is handling keyboard interaction with the map, enabled by default.
  */
 
-// @namespace Map
+// @namespace LeafletMap
 // @section Keyboard Navigation Options
 Map.mergeOptions({
 	// @option keyboard: Boolean = true
@@ -21,23 +21,23 @@ Map.mergeOptions({
 	keyboardPanDelta: 80
 });
 
-export const Keyboard = Handler.extend({
+export class Keyboard extends Handler {
 
-	keyCodes: {
+	static keyCodes = {
 		left:    ['ArrowLeft'],
 		right:   ['ArrowRight'],
 		down:    ['ArrowDown'],
 		up:      ['ArrowUp'],
 		zoomIn:  ['Equal', 'NumpadAdd', 'BracketRight'],
 		zoomOut: ['Minus', 'NumpadSubtract', 'Digit6', 'Slash']
-	},
+	};
 
 	initialize(map) {
 		this._map = map;
 
 		this._setPanDelta(map.options.keyboardPanDelta);
 		this._setZoomDelta(map.options.zoomDelta);
-	},
+	}
 
 	addHooks() {
 		const container = this._map._container;
@@ -46,6 +46,9 @@ export const Keyboard = Handler.extend({
 		if (container.tabIndex <= 0) {
 			container.tabIndex = '0';
 		}
+
+		// add aria-attribute for keyboard shortcuts to the container
+		container.ariaKeyShortcuts = Object.values(Keyboard.keyCodes).flat().join(' ');
 
 		on(container, {
 			focus: this._onFocus,
@@ -57,7 +60,7 @@ export const Keyboard = Handler.extend({
 			focus: this._addHooks,
 			blur: this._removeHooks
 		}, this);
-	},
+	}
 
 	removeHooks() {
 		this._removeHooks();
@@ -72,88 +75,86 @@ export const Keyboard = Handler.extend({
 			focus: this._addHooks,
 			blur: this._removeHooks
 		}, this);
-	},
+	}
 
 	//  acquire/lose focus #594, #1228, #1540
 	_onPointerDown() {
 		if (this._focused) { return; }
 
 		const body = document.body,
-		    docEl = document.documentElement,
-		    top = body.scrollTop || docEl.scrollTop,
-		    left = body.scrollLeft || docEl.scrollLeft;
+		docEl = document.documentElement,
+		top = body.scrollTop || docEl.scrollTop,
+		left = body.scrollLeft || docEl.scrollLeft;
 
 		this._map._container.focus();
 
 		window.scrollTo(left, top);
-	},
+	}
 
 	_onFocus() {
 		this._focused = true;
 		this._map.fire('focus');
-	},
+	}
 
 	_onBlur() {
 		this._focused = false;
 		this._map.fire('blur');
-	},
+	}
 
 	_setPanDelta(panDelta) {
 		const keys = this._panKeys = {},
-		    codes = this.keyCodes;
-		let i, len;
+		codes = Keyboard.keyCodes;
 
-		for (i = 0, len = codes.left.length; i < len; i++) {
-			keys[codes.left[i]] = [-1 * panDelta, 0];
+		for (const code of codes.left) {
+			keys[code] = [-1 * panDelta, 0];
 		}
-		for (i = 0, len = codes.right.length; i < len; i++) {
-			keys[codes.right[i]] = [panDelta, 0];
+		for (const code of codes.right) {
+			keys[code] = [panDelta, 0];
 		}
-		for (i = 0, len = codes.down.length; i < len; i++) {
-			keys[codes.down[i]] = [0, panDelta];
+		for (const code of codes.down) {
+			keys[code] = [0, panDelta];
 		}
-		for (i = 0, len = codes.up.length; i < len; i++) {
-			keys[codes.up[i]] = [0, -1 * panDelta];
+		for (const code of codes.up) {
+			keys[code] = [0, -1 * panDelta];
 		}
-	},
+	}
 
 	_setZoomDelta(zoomDelta) {
 		const keys = this._zoomKeys = {},
-		      codes = this.keyCodes;
-		let i, len;
+		codes = Keyboard.keyCodes;
 
-		for (i = 0, len = codes.zoomIn.length; i < len; i++) {
-			keys[codes.zoomIn[i]] = zoomDelta;
+		for (const code of codes.zoomIn) {
+			keys[code] = zoomDelta;
 		}
-		for (i = 0, len = codes.zoomOut.length; i < len; i++) {
-			keys[codes.zoomOut[i]] = -zoomDelta;
+		for (const code of codes.zoomOut) {
+			keys[code] = -zoomDelta;
 		}
-	},
+	}
 
 	_addHooks() {
 		on(document, 'keydown', this._onKeyDown, this);
-	},
+	}
 
 	_removeHooks() {
 		off(document, 'keydown', this._onKeyDown, this);
-	},
+	}
 
 	_onKeyDown(e) {
 		if (e.altKey || e.ctrlKey || e.metaKey) { return; }
 
 		const key = e.code,
-		     map = this._map;
+		map = this._map;
 		let offset;
 
 		if (key in this._panKeys) {
 			if (!map._panAnim || !map._panAnim._inProgress) {
 				offset = this._panKeys[key];
 				if (e.shiftKey) {
-					offset = toPoint(offset).multiplyBy(3);
+					offset = new Point(offset).multiplyBy(3);
 				}
 
 				if (map.options.maxBounds) {
-					offset = map._limitOffset(toPoint(offset), map.options.maxBounds);
+					offset = map._limitOffset(new Point(offset), map.options.maxBounds);
 				}
 
 				if (map.options.worldCopyJump) {
@@ -175,7 +176,7 @@ export const Keyboard = Handler.extend({
 
 		stop(e);
 	}
-});
+}
 
 // @section Handlers
 // @section Handlers

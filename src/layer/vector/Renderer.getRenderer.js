@@ -1,9 +1,9 @@
 import {Map} from '../../map/Map.js';
-import {canvas} from './Canvas.js';
-import {svg} from './SVG.js';
+import {Canvas} from './Canvas.js';
+import {SVG} from './SVG.js';
 
 Map.include({
-	// @namespace Map; @method getRenderer(layer: Path): Renderer
+	// @namespace LeafletMap; @method getRenderer(layer: Path): Renderer
 	// Returns the instance of `Renderer` that should be used to render the given
 	// `Path`. It will ensure that the `renderer` options of the map and paths
 	// are respected, and that the renderers do exist on the map.
@@ -11,7 +11,8 @@ Map.include({
 		// @namespace Path; @option renderer: Renderer
 		// Use this specific instance of `Renderer` for this path. Takes
 		// precedence over the map's [default renderer](#map-renderer).
-		let renderer = layer.options.renderer || this._getPaneRenderer(layer.options.pane) || this.options.renderer || this._renderer;
+		// If set, it will override the `pane` option of the path.
+		let renderer = layer.options.renderer ?? this._getPaneRenderer(layer.options.pane) ?? this.options.renderer ?? this._renderer;
 
 		if (!renderer) {
 			renderer = this._renderer = this._createRenderer();
@@ -25,7 +26,7 @@ Map.include({
 
 	_getPaneRenderer(name) {
 		if (name === 'overlayPane' || name === undefined) {
-			return false;
+			return;
 		}
 
 		let renderer = this._paneRenderers[name];
@@ -37,9 +38,9 @@ Map.include({
 	},
 
 	_createRenderer(options) {
-		// @namespace Map; @option preferCanvas: Boolean = false
+		// @namespace LeafletMap; @option preferCanvas: Boolean = false
 		// Whether `Path`s should be rendered on a `Canvas` renderer.
 		// By default, all `Path`s are rendered in a `SVG` renderer.
-		return (this.options.preferCanvas && canvas(options)) || svg(options);
+		return (this.options.preferCanvas && new Canvas(options)) || new SVG(options);
 	}
 });

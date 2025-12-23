@@ -1,15 +1,15 @@
 import {expect} from 'chai';
-import {DomUtil, Map, Marker, Point} from 'leaflet';
+import {DomUtil, LeafletMap, Marker, Point} from 'leaflet';
 import Hand from 'prosthetic-hand';
-import {createContainer, removeMapContainer} from '../../SpecHelper.js';
+import {createContainer, removeMapContainer, pointerEventType} from '../../SpecHelper.js';
 
 describe('Marker.Drag', () => {
 	let map,
-	    container;
+	container;
 
 	beforeEach(() => {
 		container = createContainer();
-		map = new Map(container);
+		map = new LeafletMap(container);
 		container.style.width = '600px';
 		container.style.height = '600px';
 		map.setView([0, 0], 0);
@@ -19,14 +19,15 @@ describe('Marker.Drag', () => {
 		removeMapContainer(map, container);
 	});
 
-	const MyMarker = Marker.extend({
+	class MyMarker extends Marker {
 		_getPosition() {
 			return DomUtil.getPosition(this.dragging._draggable._element);
-		},
+		}
 		getOffset() {
 			return this._getPosition().subtract(this._initialPos);
 		}
-	}).addInitHook('on', 'add', function () {
+	}
+	MyMarker.addInitHook('on', 'add', function () {
 		this._initialPos = this._getPosition();
 	});
 
@@ -49,7 +50,7 @@ describe('Marker.Drag', () => {
 					done();
 				}
 			});
-			const toucher = hand.growFinger('mouse');
+			const toucher = hand.growFinger(...pointerEventType);
 
 			toucher.moveTo(start.x, start.y, 0)
 				.down().moveBy(5, 0, 20).moveTo(finish.x, finish.y, 1000).up();
@@ -81,7 +82,7 @@ describe('Marker.Drag', () => {
 						done();
 					}
 				});
-				const toucher = hand.growFinger('mouse');
+				const toucher = hand.growFinger(...pointerEventType);
 
 				const startScaled = start.scaleBy(scale);
 				const finishScaled = finish.scaleBy(scale);
@@ -112,7 +113,7 @@ describe('Marker.Drag', () => {
 					done();
 				}
 			});
-			const toucher = hand.growFinger('mouse');
+			const toucher = hand.growFinger(...pointerEventType);
 
 			toucher.moveTo(start.x, start.y, 0)
 				.down().moveBy(5, 0, 20).moveTo(finish.x, finish.y, 1000).up();

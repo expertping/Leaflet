@@ -9,7 +9,7 @@
 		<script type="importmap">
 			{
 				"imports": {
-					"leaflet": "../../dist/leaflet-src.esm.js"
+					"leaflet": "../../dist/leaflet-src.js"
 				}
 			}
 		</script>
@@ -19,7 +19,7 @@
 		<button id="zoomToPath" type="button">Zoom to path</button>
 		<button id="zoomToPolygon" type="button">Zoom to polygon</button>
 		<script type="module">
-			import {TileLayer, Polyline, LatLng, Polygon, Map} from 'leaflet';
+			import {TileLayer, Polyline, LatLng, Polygon, LeafletMap} from 'leaflet';
 
 			const osm = new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18});
 
@@ -44,21 +44,12 @@
 				[39.67759833072648, -104.89471435546875]
 			];
 
-			const latlngs = [];
-
-			for (let i = 0, len = pathPoints.length; i < len; i++) {
-				latlngs.push(new LatLng(pathPoints[i][0], pathPoints[i][1]));
-			}
-
+			const latlngs = pathPoints.map(p => new LatLng(p[0], p[1]));
 			const path = new Polyline(latlngs);
-			const latlngs2 = [];
 
-			for (let i = 0, len = polyPoints.length; i < len; i++) {
-				latlngs2.push(new LatLng(polyPoints[i][0], polyPoints[i][1]));
-			}
-
+			const latlngs2 = polyPoints.map(p => new LatLng(p[0], p[1]));
 			const poly = new Polygon(latlngs2);
-			const map = new Map('map', {
+			const map = new LeafletMap('map', {
 				layers: [osm],
 				center: new LatLng(39.69596043694606, -104.95084762573242),
 				zoom: 12

@@ -1,5 +1,5 @@
 ﻿import {expect} from 'chai';
-import {Marker, featureGroup, layerGroup, stamp} from 'leaflet';
+import {Marker, FeatureGroup, LayerGroup, Util} from 'leaflet';
 
 describe('FeatureGroup', () => {
 	describe('#_propagateEvent', () => {
@@ -11,14 +11,14 @@ describe('FeatureGroup', () => {
 
 		describe('when a Marker is added to multiple FeatureGroups ', () => {
 			it('e.propagatedFrom should be the Marker', () => {
-				const fg1 = featureGroup(),
-				    fg2 = featureGroup();
+				const fg1 = new FeatureGroup(),
+				fg2 = new FeatureGroup();
 
 				fg1.addLayer(marker);
 				fg2.addLayer(marker);
 
 				let wasClicked1,
-				    wasClicked2;
+				wasClicked2;
 
 				fg2.on('click', (e) => {
 					expect(e.propagatedFrom).to.equal(marker);
@@ -42,8 +42,8 @@ describe('FeatureGroup', () => {
 
 	describe('addLayer', () => {
 		it('adds the layer', () => {
-			const fg = featureGroup(),
-			    marker = new Marker([0, 0]);
+			const fg = new FeatureGroup(),
+			marker = new Marker([0, 0]);
 
 			expect(fg.hasLayer(marker)).to.be.false;
 
@@ -53,8 +53,8 @@ describe('FeatureGroup', () => {
 		});
 
 		it('supports non-evented layers', () => {
-			const fg = featureGroup(),
-			    g = layerGroup();
+			const fg = new FeatureGroup(),
+			g = new LayerGroup();
 
 			expect(fg.hasLayer(g)).to.be.false;
 
@@ -66,8 +66,8 @@ describe('FeatureGroup', () => {
 
 	describe('removeLayer', () => {
 		it('removes the layer passed to it', () => {
-			const fg = featureGroup(),
-			    marker = new Marker([0, 0]);
+			const fg = new FeatureGroup(),
+			marker = new Marker([0, 0]);
 
 			fg.addLayer(marker);
 			expect(fg.hasLayer(marker)).to.be.true;
@@ -77,13 +77,13 @@ describe('FeatureGroup', () => {
 		});
 
 		it('removes the layer passed to it by id', () => {
-			const fg = featureGroup(),
-			    marker = new Marker([0, 0]);
+			const fg = new FeatureGroup(),
+			marker = new Marker([0, 0]);
 
 			fg.addLayer(marker);
 			expect(fg.hasLayer(marker)).to.be.true;
 
-			fg.removeLayer(stamp(marker));
+			fg.removeLayer(Util.stamp(marker));
 			expect(fg.hasLayer(marker)).to.be.false;
 		});
 	});

@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {CircleMarker, FeatureGroup, LayerGroup, Map, Marker, Polygon, Polyline, Rectangle, Tooltip} from 'leaflet';
+import {CircleMarker, FeatureGroup, LayerGroup, LeafletMap, Marker, Polygon, Polyline, Rectangle, Tooltip} from 'leaflet';
 import Hand from 'prosthetic-hand';
 import sinon from 'sinon';
 import UIEventSimulator from 'ui-event-simulator';
@@ -11,7 +11,7 @@ describe('Tooltip', () => {
 
 	beforeEach(() => {
 		container = container = createContainer();
-		map = new Map(container);
+		map = new LeafletMap(container);
 		map.setView(center, 6);
 	});
 
@@ -19,16 +19,16 @@ describe('Tooltip', () => {
 		removeMapContainer(map, container);
 	});
 
-	it('opens on marker mouseover and close on mouseout', () => {
+	it('opens on marker pointerover and close on pointerout', () => {
 		const layer = new Marker(center).addTo(map);
 
 		layer.bindTooltip('Tooltip');
 
-		UIEventSimulator.fire('mouseover', layer._icon, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerover', layer._icon, {relatedTarget: map._container});
 
 		expect(map.hasLayer(layer._tooltip)).to.be.true;
 
-		UIEventSimulator.fire('mouseout', layer._icon, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerout', layer._icon, {relatedTarget: map._container});
 		expect(map.hasLayer(layer._tooltip)).to.be.false;
 	});
 
@@ -297,26 +297,26 @@ describe('Tooltip', () => {
 		group.bindTooltip(layer => layer.options.description);
 
 		// toggle popup on marker1
-		UIEventSimulator.fire('mouseover', marker1._icon, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerover', marker1._icon, {relatedTarget: map._container});
 		expect(map.hasLayer(group._tooltip)).to.be.true;
 		expect(group._tooltip._container.innerHTML).to.equal('I\'m marker 1.');
 
 		// toggle popup on marker2
-		UIEventSimulator.fire('mouseover', marker2._icon, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerover', marker2._icon, {relatedTarget: map._container});
 		expect(map.hasLayer(group._tooltip)).to.be.true;
 		expect(group._tooltip._container.innerHTML).to.equal('I\'m marker 2.');
 	});
 
-	it('opens on polygon mouseover and close on mouseout', () => {
+	it('opens on polygon pointerover and close on pointerout', () => {
 		const layer = new Polygon([[55.8, 37.6], [55.9, 37.6], [55.8, 37.5]]).addTo(map);
 
 		layer.bindTooltip('Tooltip');
 
-		UIEventSimulator.fire('mouseover', layer._path, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerover', layer._path, {relatedTarget: map._container});
 
 		expect(map.hasLayer(layer._tooltip)).to.be.true;
 
-		UIEventSimulator.fire('mouseout', layer._path, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerout', layer._path, {relatedTarget: map._container});
 		expect(map.hasLayer(layer._tooltip)).to.be.false;
 	});
 
@@ -340,16 +340,16 @@ describe('Tooltip', () => {
 		expect(map.hasLayer(layer._tooltip)).to.be.true;
 	});
 
-	it('opens on polyline mouseover and close on mouseout', () => {
+	it('opens on polyline pointerover and close on pointerout', () => {
 		const layer = new Polyline([[55.8, 37.6], [55.9, 37.6], [55.8, 37.5]]).addTo(map);
 
 		layer.bindTooltip('Tooltip');
 
-		UIEventSimulator.fire('mouseover', layer._path, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerover', layer._path, {relatedTarget: map._container});
 
 		expect(map.hasLayer(layer._tooltip)).to.be.true;
 
-		UIEventSimulator.fire('mouseout', layer._path, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerout', layer._path, {relatedTarget: map._container});
 		expect(map.hasLayer(layer._tooltip)).to.be.false;
 	});
 
@@ -404,8 +404,8 @@ describe('Tooltip', () => {
 	it('map.openTooltip considers interactive option', () => {
 		const spy = sinon.spy();
 		const tooltip = new Tooltip({interactive: true, permanent: true})
-		  .setContent('Tooltip')
-		  .on('click', spy);
+			.setContent('Tooltip')
+			.on('click', spy);
 		map.openTooltip(tooltip, center);
 
 		UIEventSimulator.fire('click', tooltip._container);
@@ -418,7 +418,7 @@ describe('Tooltip', () => {
 		layer.closeTooltip();
 	});
 
-	it('opens a tooltip and follow the mouse (sticky)', () => {
+	it('opens a tooltip and follow the pointer (sticky)', () => {
 		const layer = new Rectangle([[58, 39.7], [54, 35.3]]).addTo(map);
 		layer.bindTooltip('Sticky', {sticky: true}).openTooltip();
 		const tooltip = layer.getTooltip();
@@ -429,7 +429,7 @@ describe('Tooltip', () => {
 		expect(tooltip.getLatLng().equals(latlng)).to.be.true;
 	});
 
-	it('opens a permanent tooltip and follow the mouse (sticky)', (done) => {
+	it('opens a permanent tooltip and follow the pointer (sticky)', (done) => {
 		const layer = new Rectangle([[58, 39.7], [54, 35.3]]).addTo(map);
 		layer.bindTooltip('Sticky', {sticky: true, permanent: true}).openTooltip();
 		const tooltip = layer.getTooltip();
@@ -443,7 +443,7 @@ describe('Tooltip', () => {
 				done();
 			}
 		});
-		const toucher = hand.growFinger('mouse');
+		const toucher = hand.growFinger('pointer');
 		toucher.wait(100).moveTo(120, 120, 1000).wait(100);
 	});
 
@@ -458,8 +458,8 @@ describe('Tooltip', () => {
 		expect(eventSpy.calledOnce).to.be.true;
 	});
 
-	it('don\'t opens the tooltip on marker mouseover while dragging map', (done) => {
-		// Sometimes the mouse is moving faster then the map while dragging and then the marker can be hover and
+	it('don\'t opens the tooltip on marker pointerover while dragging map', (done) => {
+		// Sometimes the pointer is moving faster then the map while dragging and then the marker can be hover and
 		// the tooltip opened / closed.
 		const layer = new Marker(center).addTo(map).bindTooltip('Tooltip');
 		const tooltip = layer.getTooltip();
@@ -467,7 +467,7 @@ describe('Tooltip', () => {
 		// simulate map dragging
 		map.dragging.moving =  () => true;
 
-		UIEventSimulator.fireAt('mouseover', 210, 195);
+		UIEventSimulator.fireAt('pointerover', 210, 195);
 		expect(tooltip.isOpen()).to.be.false;
 
 		// simulate map not dragging anymore
@@ -476,7 +476,7 @@ describe('Tooltip', () => {
 		map.on('moveend', () => {
 			expect(tooltip.isOpen()).to.be.false;
 
-			UIEventSimulator.fireAt('mouseover', 210, 195);
+			UIEventSimulator.fireAt('pointerover', 210, 195);
 			expect(tooltip.isOpen()).to.be.true;
 
 			done();
@@ -487,23 +487,23 @@ describe('Tooltip', () => {
 
 	});
 
-	it('closes the tooltip on marker mouseout while dragging map and don\'t open it again', () => {
-		// Sometimes the mouse is moving faster then the map while dragging and then the marker can be hover and
+	it('closes the tooltip on marker pointerout while dragging map and don\'t open it again', () => {
+		// Sometimes the pointer is moving faster then the map while dragging and then the marker can be hover and
 		// the tooltip opened / closed.
 		const layer = new Marker(center).addTo(map).bindTooltip('Tooltip');
 		const tooltip = layer.getTooltip();
 
 		// open tooltip before "dragging map"
-		UIEventSimulator.fireAt('mouseover', 210, 195);
+		UIEventSimulator.fireAt('pointerover', 210, 195);
 		expect(tooltip.isOpen()).to.be.true;
 
 		// simulate map dragging
 		map.dragging.moving = () => true;
-		UIEventSimulator.fire('mouseout', layer._icon, {relatedTarget: map._container});
+		UIEventSimulator.fire('pointerout', layer._icon, {relatedTarget: map._container});
 		expect(tooltip.isOpen()).to.be.false;
 
 		// tooltip should not open again while dragging
-		UIEventSimulator.fireAt('mouseover', 210, 195);
+		UIEventSimulator.fireAt('pointerover', 210, 195);
 		expect(tooltip.isOpen()).to.be.false;
 	});
 
@@ -579,5 +579,37 @@ describe('Tooltip', () => {
 		expect(spy2.called).to.be.false;
 		layer2.openTooltip();
 		expect(spy2.called).to.be.true;
+	});
+
+	it('removes focus listeners after unbinding tooltip from Layer', () => {
+		const marker = new Marker([51.515, -0.09]).addTo(map);
+
+		marker
+			.bindTooltip('Tooltip that will be unbinded')
+			.openTooltip();
+
+		expect(marker.getElement()._leaflet_focus_handler).to.be.not.undefined;
+
+		marker.unbindTooltip();
+
+		expect(() => UIEventSimulator.fire('focus', marker.getElement())).to.not.throw();
+		expect(marker.getElement()._leaflet_focus_handler).to.be.undefined;
+	});
+
+	it('removes focus listeners after unbinding tooltip from FeatureGroup', () => {
+
+		const marker = new Marker([51.515, -0.09]);
+		const layergroup = new FeatureGroup([marker]).addTo(map);
+
+		layergroup
+			.bindTooltip('Tooltip that will be unbinded in two seconds')
+			.openTooltip();
+
+		expect(marker.getElement()._leaflet_focus_handler).to.be.not.undefined;
+
+		layergroup.unbindTooltip();
+
+		expect(() => UIEventSimulator.fire('focus', marker.getElement())).to.not.throw();
+		expect(marker.getElement()._leaflet_focus_handler).to.be.undefined;
 	});
 });

@@ -1,14 +1,13 @@
 import {CircleMarker} from './CircleMarker.js';
 import {Path} from './Path.js';
 import * as Util from '../../core/Util.js';
-import {toLatLng} from '../../geo/LatLng.js';
+import {LatLng} from '../../geo/LatLng.js';
 import {LatLngBounds} from '../../geo/LatLngBounds.js';
 import {Earth} from '../../geo/crs/CRS.Earth.js';
 
 
 /*
  * @class Circle
- * @aka L.Circle
  * @inherits CircleMarker
  *
  * A class for drawing circle overlays on a map. Extends `CircleMarker`.
@@ -18,19 +17,18 @@ import {Earth} from '../../geo/crs/CRS.Earth.js';
  * @example
  *
  * ```js
- * L.circle([50.5, 30.5], {radius: 200}).addTo(map);
+ * new Circle([50.5, 30.5], {radius: 200}).addTo(map);
  * ```
  */
 
-export const Circle = CircleMarker.extend({
+// @constructor Circle(latlng: LatLng, options?: Circle options)
+// Instantiates a circle object given a geographical point, and an options object
+// which contains the circle radius.
+export class Circle extends CircleMarker {
 
-	initialize(latlng, options, legacyOptions) {
-		if (typeof options === 'number') {
-			// Backwards compatibility with 0.7.x factory (latlng, radius, options?)
-			options = Util.extend({}, legacyOptions, {radius: options});
-		}
+	initialize(latlng, options) {
 		Util.setOptions(this, options);
-		this._latlng = toLatLng(latlng);
+		this._latlng = new LatLng(latlng);
 
 		if (isNaN(this.options.radius)) { throw new Error('Circle radius cannot be NaN'); }
 
@@ -38,49 +36,55 @@ export const Circle = CircleMarker.extend({
 		// @aka Circle options
 		// @option radius: Number; Radius of the circle, in meters.
 		this._mRadius = this.options.radius;
-	},
+	}
 
 	// @method setRadius(radius: Number): this
 	// Sets the radius of a circle. Units are in meters.
 	setRadius(radius) {
 		this._mRadius = radius;
 		return this.redraw();
-	},
+	}
 
 	// @method getRadius(): Number
 	// Returns the current radius of a circle. Units are in meters.
 	getRadius() {
 		return this._mRadius;
-	},
+	}
 
 	// @method getBounds(): LatLngBounds
 	// Returns the `LatLngBounds` of the path.
 	getBounds() {
-		const half = [this._radius, this._radiusY || this._radius];
+		const half = [this._radius, this._radiusY ?? this._radius];
 
 		return new LatLngBounds(
 			this._map.layerPointToLatLng(this._point.subtract(half)),
 			this._map.layerPointToLatLng(this._point.add(half)));
-	},
+	}
 
-	setStyle: Path.prototype.setStyle,
+	setStyle(options) {
+		Path.prototype.setStyle.call(this, options);
+		if (options?.radius !== undefined) {
+			this.setRadius(options.radius);
+		}
+		return this;
+	}
 
 	_project() {
 
 		const lng = this._latlng.lng,
-		    lat = this._latlng.lat,
-		    map = this._map,
-		    crs = map.options.crs;
+		lat = this._latlng.lat,
+		map = this._map,
+		crs = map.options.crs;
 
 		if (crs.distance === Earth.distance) {
 			const d = Math.PI / 180,
-			      latR = (this._mRadius / Earth.R) / d,
-			      top = map.project([lat + latR, lng]),
-			      bottom = map.project([lat - latR, lng]),
-			      p = top.add(bottom).divideBy(2),
-			      lat2 = map.unproject(p).lat;
+			latR = (this._mRadius / Earth.R) / d,
+			top = map.project([lat + latR, lng]),
+			bottom = map.project([lat - latR, lng]),
+			p = top.add(bottom).divideBy(2),
+			lat2 = map.unproject(p).lat;
 			let lngR = Math.acos((Math.cos(latR * d) - Math.sin(lat * d) * Math.sin(lat2 * d)) /
-			            (Math.cos(lat * d) * Math.cos(lat2 * d))) / d;
+				        (Math.cos(lat * d) * Math.cos(lat2 * d))) / d;
 
 			if (isNaN(lngR) || lngR === 0) {
 				lngR = latR / Math.cos(Math.PI / 180 * lat); // Fallback for edge case, #2425
@@ -94,20 +98,9 @@ export const Circle = CircleMarker.extend({
 			const latlng2 = crs.unproject(crs.project(this._latlng).subtract([this._mRadius, 0]));
 
 			this._point = map.latLngToLayerPoint(this._latlng);
-			this._radius = this._point.x - map.latLngToLayerPoint(latlng2).x;
+			this._radius = Math.abs(this._point.x - map.latLngToLayerPoint(latlng2).x);
 		}
 
 		this._updateBounds();
 	}
-});
-
-// @factory L.circle(latlng: LatLng, options?: Circle options)
-// Instantiates a circle object given a geographical point, and an options object
-// which contains the circle radius.
-// @alternative
-// @factory L.circle(latlng: LatLng, radius: Number, options?: Circle options)
-// Obsolete way of instantiating a circle, for compatibility with 0.7.x code.
-// Do not use in new applications or plugins.
-export function circle(latlng, options, legacyOptions) {
-	return new Circle(latlng, options, legacyOptions);
 }

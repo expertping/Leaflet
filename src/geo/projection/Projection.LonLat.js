@@ -7,7 +7,7 @@ import {Point} from '../../geometry/Point.js';
  * @section
  * Leaflet comes with a set of already defined Projections out of the box:
  *
- * @projection L.Projection.LonLat
+ * @projection Projection.LonLat
  *
  * Equirectangular, or Plate Carree projection — the most simple projection,
  * mostly used by GIS enthusiasts. Directly maps `x` as longitude, and `y` as
@@ -17,10 +17,12 @@ import {Point} from '../../geometry/Point.js';
 
 export const LonLat = {
 	project(latlng) {
+		latlng = new LatLng(latlng);
 		return new Point(latlng.lng, latlng.lat);
 	},
 
 	unproject(point) {
+		point = new Point(point);
 		return new LatLng(point.y, point.x);
 	},
 

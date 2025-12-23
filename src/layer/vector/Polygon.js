@@ -7,7 +7,6 @@ import * as PolyUtil from '../../geometry/PolyUtil.js';
 
 /*
  * @class Polygon
- * @aka L.Polygon
  * @inherits Polyline
  *
  * A class for drawing polygon overlays on a map. Extends `Polyline`.
@@ -19,9 +18,9 @@ import * as PolyUtil from '../../geometry/PolyUtil.js';
  *
  * ```js
  * // create a red polygon from an array of LatLng points
- * var latlngs = [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]];
+ * const latlngs = [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]];
  *
- * var polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
+ * const polygon = new Polygon(latlngs, {color: 'red'}).addTo(map);
  *
  * // zoom the map to the polygon
  * map.fitBounds(polygon.getBounds());
@@ -30,7 +29,7 @@ import * as PolyUtil from '../../geometry/PolyUtil.js';
  * You can also pass an array of arrays of latlngs, with the first array representing the outer shape and the other arrays representing holes in the outer shape:
  *
  * ```js
- * var latlngs = [
+ * const latlngs = [
  *   [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
  *   [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole
  * ];
@@ -39,7 +38,7 @@ import * as PolyUtil from '../../geometry/PolyUtil.js';
  * Additionally, you can pass a multi-dimensional array to represent a MultiPolygon shape.
  *
  * ```js
- * var latlngs = [
+ * const latlngs = [
  *   [ // first polygon
  *     [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
  *     [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole
@@ -51,15 +50,18 @@ import * as PolyUtil from '../../geometry/PolyUtil.js';
  * ```
  */
 
-export const Polygon = Polyline.extend({
+// @constructor Polygon(latlngs: LatLng[], options?: Polyline options)
+export class Polygon extends Polyline {
 
-	options: {
-		fill: true
-	},
+	static {
+		this.setDefaultOptions({
+			fill: true
+		});
+	}
 
 	isEmpty() {
 		return !this._latlngs.length || !this._latlngs[0].length;
-	},
+	}
 
 	// @method getCenter(): LatLng
 	// Returns the center ([centroid](http://en.wikipedia.org/wiki/Centroid)) of the Polygon.
@@ -69,36 +71,36 @@ export const Polygon = Polyline.extend({
 			throw new Error('Must add layer to map before using getCenter()');
 		}
 		return PolyUtil.polygonCenter(this._defaultShape(), this._map.options.crs);
-	},
+	}
 
 	_convertLatLngs(latlngs) {
-		const result = Polyline.prototype._convertLatLngs.call(this, latlngs),
-		    len = result.length;
+		const result = super._convertLatLngs(latlngs),
+		len = result.length;
 
 		// remove last point if it equals first one
 		if (len >= 2 && result[0] instanceof LatLng && result[0].equals(result[len - 1])) {
 			result.pop();
 		}
 		return result;
-	},
+	}
 
 	_setLatLngs(latlngs) {
-		Polyline.prototype._setLatLngs.call(this, latlngs);
+		super._setLatLngs(latlngs);
 		if (LineUtil.isFlat(this._latlngs)) {
 			this._latlngs = [this._latlngs];
 		}
-	},
+	}
 
 	_defaultShape() {
 		return LineUtil.isFlat(this._latlngs[0]) ? this._latlngs[0] : this._latlngs[0][0];
-	},
+	}
 
 	_clipPoints() {
 		// polygons need a different clipping algorithm so we redefine that
 
 		let bounds = this._renderer._bounds;
 		const w = this.options.weight,
-		      p = new Point(w, w);
+		p = new Point(w, w);
 
 		// increase clip padding by stroke width to avoid stroke on clip edges
 		bounds = new Bounds(bounds.min.subtract(p), bounds.max.add(p));
@@ -113,22 +115,22 @@ export const Polygon = Polyline.extend({
 			return;
 		}
 
-		for (let i = 0, len = this._rings.length, clipped; i < len; i++) {
-			clipped = PolyUtil.clipPolygon(this._rings[i], bounds, true);
+		for (const ring of this._rings) {
+			const clipped = PolyUtil.clipPolygon(ring, bounds, true);
 			if (clipped.length) {
 				this._parts.push(clipped);
 			}
 		}
-	},
+	}
 
 	_updatePath() {
 		this._renderer._updatePoly(this, true);
-	},
+	}
 
 	// Needed by the `Canvas` renderer for interactivity
 	_containsPoint(p) {
 		let inside = false,
-		    part, p1, p2, i, j, k, len, len2;
+		part, p1, p2, i, j, k, len, len2;
 
 		if (!this._pxBounds || !this._pxBounds.contains(p)) { return false; }
 
@@ -147,13 +149,7 @@ export const Polygon = Polyline.extend({
 		}
 
 		// also check if it's on polygon stroke
-		return inside || Polyline.prototype._containsPoint.call(this, p, true);
+		return inside || super._containsPoint(p, true);
 	}
 
-});
-
-
-// @factory L.polygon(latlngs: LatLng[], options?: Polyline options)
-export function polygon(latlngs, options) {
-	return new Polygon(latlngs, options);
 }

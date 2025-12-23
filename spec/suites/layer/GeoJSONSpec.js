@@ -1,5 +1,6 @@
 import {expect} from 'chai';
-import {Circle, CircleMarker, FeatureGroup, GeoJSON, LatLng, LayerGroup, Marker, Polygon, Polyline, TileLayer} from 'leaflet';
+import {Circle, CircleMarker, FeatureGroup, GeoJSON, LatLng, Layer, LayerGroup, LeafletMap, Marker, Polygon, Polyline, TileLayer} from 'leaflet';
+import {createContainer, removeMapContainer} from '../SpecHelper.js';
 
 describe('GeoJSON', () => {
 	describe('addData', () => {
@@ -99,6 +100,30 @@ describe('GeoJSON', () => {
 			expect(layer2.options.color).to.equal('chocolate');
 		});
 	});
+
+	describe('GeoJSON#addTo', () => {
+		let container, map;
+
+		beforeEach(() => {
+			container = createContainer();
+			map = new LeafletMap(container);
+			map.setView([0, 0], 1);
+		});
+
+		afterEach(() => {
+			removeMapContainer(map, container);
+		});
+
+		it('adds a GeoJSON Point to the map', () => {
+			new GeoJSON({
+				'type': 'Point',
+				'coordinates': [30.0, 10.0]
+			}).addTo(map);
+			expect(Object.values(map._layers).length).to.eql(2);
+			expect(Object.values(map._layers)[0]).to.be.instanceOf(Layer);
+			expect(Object.values(map._layers)[1]).to.be.instanceOf(Layer);
+		});
+	});
 });
 
 describe('Marker#toGeoJSON', () => {
@@ -129,7 +154,7 @@ describe('Marker#toGeoJSON', () => {
 
 describe('Circle#toGeoJSON', () => {
 	it('returns a 2D Point object', () => {
-		const circle = new Circle([10, 20], 100);
+		const circle = new Circle([10, 20], {radius: 100});
 		expect(circle.toGeoJSON().geometry).to.eql({
 			type: 'Point',
 			coordinates: [20, 10]
@@ -137,7 +162,7 @@ describe('Circle#toGeoJSON', () => {
 	});
 
 	it('returns a 3D Point object', () => {
-		const circle = new Circle([10, 20, 30], 100);
+		const circle = new Circle([10, 20, 30], {radius: 100});
 		expect(circle.toGeoJSON().geometry).to.eql({
 			type: 'Point',
 			coordinates: [20, 10, 30]
@@ -145,7 +170,7 @@ describe('Circle#toGeoJSON', () => {
 	});
 
 	it('should allow specific precisions', () => {
-		const circle = new Circle([10.1234, 20.1234, 30.1234], 100);
+		const circle = new Circle([10.1234, 20.1234, 30.1234], {radius: 100});
 		expect(circle.toGeoJSON(3).geometry).to.eql({
 			type: 'Point',
 			coordinates: [20.123, 10.123, 30.123]
@@ -364,8 +389,8 @@ describe('Polygon (multi) #toGeoJSON', () => {
 describe('LayerGroup#toGeoJSON', () => {
 	it('returns a 2D FeatureCollection object', () => {
 		const marker = new Marker([10, 20]),
-		    polyline = new Polyline([[10, 20], [2, 5]]),
-		    layerGroup = new LayerGroup([marker, polyline]);
+		polyline = new Polyline([[10, 20], [2, 5]]),
+		layerGroup = new LayerGroup([marker, polyline]);
 		expect(layerGroup.toGeoJSON()).to.eql({
 			type: 'FeatureCollection',
 			features: [marker.toGeoJSON(), polyline.toGeoJSON()]
@@ -374,8 +399,8 @@ describe('LayerGroup#toGeoJSON', () => {
 
 	it('returns a 3D FeatureCollection object', () => {
 		const marker = new Marker([10, 20, 30]),
-		    polyline = new Polyline([[10, 20, 30], [2, 5, 10]]),
-		    layerGroup = new LayerGroup([marker, polyline]);
+		polyline = new Polyline([[10, 20, 30], [2, 5, 10]]),
+		layerGroup = new LayerGroup([marker, polyline]);
 		expect(layerGroup.toGeoJSON()).to.eql({
 			type: 'FeatureCollection',
 			features: [marker.toGeoJSON(), polyline.toGeoJSON()]
@@ -384,7 +409,7 @@ describe('LayerGroup#toGeoJSON', () => {
 
 	it('ensures that every member is a Feature', () => {
 		const tileLayer = new TileLayer(),
-		    layerGroup = new LayerGroup([tileLayer]);
+		layerGroup = new LayerGroup([tileLayer]);
 
 		tileLayer.toGeoJSON = function () {
 			return {
@@ -485,7 +510,7 @@ describe('LayerGroup#toGeoJSON', () => {
 
 	it('omits layers which do not implement toGeoJSON', () => {
 		const tileLayer = new TileLayer(),
-		    layerGroup = new LayerGroup([tileLayer]);
+		layerGroup = new LayerGroup([tileLayer]);
 		expect(layerGroup.toGeoJSON()).to.eql({
 			type: 'FeatureCollection',
 			features: []
@@ -507,8 +532,8 @@ describe('LayerGroup#toGeoJSON', () => {
 
 	it('should allow specific precisions', () => {
 		const marker = new Marker([10, 20]),
-		    polyline = new Polyline([[10, 20], [2, 5]]),
-		    layerGroup = new LayerGroup([marker, polyline]);
+		polyline = new Polyline([[10, 20], [2, 5]]),
+		layerGroup = new LayerGroup([marker, polyline]);
 		expect(layerGroup.toGeoJSON(3)).to.eql({
 			type: 'FeatureCollection',
 			features: [marker.toGeoJSON(3), polyline.toGeoJSON(3)]
